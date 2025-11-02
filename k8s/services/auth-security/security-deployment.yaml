@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-security
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-security
+  template:
+    metadata:
+      labels:
+        app: auth-security
+    spec:
+      containers:
+      - name: auth-security
+        image: francoluciano/auth-security:latest
+        ports:
+        - containerPort: 3004
+
+        envFrom:
+        - configMapRef:
+            name: security-config
+        - secretRef:
+            name: security-secret
+
+        readinessProbe:
+          httpGet:
+            path: /api/healthcheck
+            port: 3004
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+        livenessProbe:
+          httpGet:
+            path: /api/healthcheck
+            port: 3004
+          initialDelaySeconds: 10
+          periodSeconds: 10

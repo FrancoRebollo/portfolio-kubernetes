@@ -1,0 +1,8 @@
+package constants
+
+const (
+	PRODUCCION = "PRODUCCION"
+	DESARROLLO = "DESARROLLO"
+	TESTING    = "TESTING"
+	POSTGRES   = "POSTGRES"
+)

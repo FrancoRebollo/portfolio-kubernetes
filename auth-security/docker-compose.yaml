@@ -1,0 +1,45 @@
+version: '3.9'
+
+services:
+  auth-security-db:
+    image: postgres:15
+    container_name: auth-security-db
+    environment:
+      POSTGRES_USER: auth_security
+      POSTGRES_PASSWORD: auth_security
+      POSTGRES_DB: auth_security_db
+    volumes:
+      - pgdata_auth:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5434:5432"
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth_security"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+#  auth-security-svc:
+#    build:
+#      context: ./auth-security-svc
+#      dockerfile: ./cmd/apis/Dockerfile
+#    container_name: auth-security-svc
+#    ports:
+#      - "3004:3004"  # host:container
+#    depends_on:
+#      auth-security-db:
+#        condition: service_healthy
+#    env_file:
+#      - ./auth-security-svc/.env
+#    networks:
+#      - backend
+
+volumes:
+  pgdata_auth:
+
+networks:
+  backend:
+    driver: bridge

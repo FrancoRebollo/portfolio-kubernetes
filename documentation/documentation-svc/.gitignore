@@ -1,0 +1,9 @@
+.env
+/logs
+
+/docs/*.go
+/docs/*.json
+/docs/*.yaml
+/bin/*.exe
+
+.air.toml

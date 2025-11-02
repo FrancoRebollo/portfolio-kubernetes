@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+  api-integration-db:
+    image: postgres:15
+    container_name: api-integration-db
+    environment:
+      POSTGRES_USER: api_integration
+      POSTGRES_PASSWORD: api_integration
+      POSTGRES_DB: api_integration_db
+    volumes:
+      - pgdata_integration:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5433:5432"
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U api_integration"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+  api-integration-svc:
+    build:
+      context: ./api-integration-svc
+      dockerfile: ./cmd/apis/Dockerfile
+    container_name: api-integration-svc
+    ports:
+      - "3002:3002" 
+    depends_on:
+      api-integration-db:
+        condition: service_healthy
+    env_file:
+      - ./api-integration-svc/.env
+
+    networks:
+      - backend
+
+volumes:
+  pgdata_integration:
+
+networks:
+  backend:
+    driver: bridge

@@ -1,0 +1,74 @@
+name: portfolio
+
+services:
+  # --- Base y RabbitMQ del async-messaging (dependencias) ---
+  async-messaging-db:
+    extends:
+      file: ./async-messaging/docker-compose.yaml
+      service: async-messaging-db
+    networks: [backend]
+
+  rabbitmq:
+    extends:
+      file: ./async-messaging/docker-compose.yaml
+      service: rabbitmq
+    networks: [backend]
+
+  # --- Servicio async-messaging (inicializa la topología) ---
+  async-messaging:
+    extends:
+      file: ./async-messaging/docker-compose.yaml
+      service: async-messaging-svc
+    depends_on:
+      async-messaging-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks: [backend]
+
+  # --- DB auth-security (dependencia) ---
+  auth-security-db:
+    extends:
+      file: ./auth-security/docker-compose.yaml
+      service: auth-security-db
+    networks: [backend]
+
+  # --- Servicio auth-security (espera a async-messaging healthy) ---
+#  auth-security:
+#    extends:
+#      file: ./auth-security/docker-compose.yaml
+#      service: auth-security-svc
+#    depends_on:
+#      auth-security-db:
+#        condition: service_healthy
+#      async-messaging:
+#        condition: service_healthy
+#    networks: [backend]
+
+  # --- DB api-integration (dependencia) ---
+  api-integration-db:
+    extends:
+      file: ./api-integration/docker-compose.yaml
+      service: api-integration-db
+    networks: [backend]
+
+  # --- Servicio api-integration (espera a async-messaging healthy) ---
+  api-integration:
+    extends:
+      file: ./api-integration/docker-compose.yaml
+      service: api-integration-svc
+    depends_on:
+      api-integration-db:
+        condition: service_healthy
+      async-messaging:
+        condition: service_healthy
+    networks: [backend]
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  async-messaging-pgdata:
+  pgdata_auth:
+  pgdata_integration:

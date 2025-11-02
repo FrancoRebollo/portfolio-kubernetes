@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: async-messaging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: async-messaging
+  template:
+    metadata:
+      labels:
+        app: async-messaging
+    spec:
+      containers:
+      - name: async-messaging
+        image: francoluciano/async-messaging:latest
+        ports:
+        - containerPort: 3003
+
+        envFrom:
+        - configMapRef:
+            name: async-config
+        - secretRef:
+            name: async-secret
+
+        readinessProbe:
+          httpGet:
+            path: /api/healthcheck
+            port: 3003
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+        livenessProbe:
+          httpGet:
+            path: /api/healthcheck
+            port: 3003
+          initialDelaySeconds: 10
+          periodSeconds: 10

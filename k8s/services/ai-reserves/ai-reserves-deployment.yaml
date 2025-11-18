@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-integration
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-integration
+  template:
+    metadata:
+      labels:
+        app: api-integration
+    spec:
+      containers:
+      - name: api-integration
+        image: francoluciano/api-integration:latest
+        ports:
+        - containerPort: 3002
+
+        envFrom:
+        - configMapRef:
+            name: api-integration-config
+        - secretRef:
+            name: api-integration-secret
+
+        readinessProbe:
+          httpGet:
+            path: /api/healthcheck
+            port: 3002
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+        livenessProbe:
+          httpGet:
+            path: /api/healthcheck
+            port: 3002
+          initialDelaySeconds: 10
+          periodSeconds: 10

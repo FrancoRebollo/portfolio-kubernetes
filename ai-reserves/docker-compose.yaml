@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+  ai-reserves-db:
+    image: postgres:15
+    container_name: ai-reserves-db
+    environment:
+      POSTGRES_USER: ai_reserves
+      POSTGRES_PASSWORD: ai_reserves
+      POSTGRES_DB: ai_reserves_db
+    volumes:
+      - pgdata_integration:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5436:5432"
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_reserves"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+##
+##  api-integration-svc:
+##    build:
+##      context: ./api-integration-svc
+##      dockerfile: ./cmd/apis/Dockerfile
+##    container_name: api-integration-svc
+##    ports:
+##      - "3002:3002" 
+##    depends_on:
+##      api-integration-db:
+##        condition: service_healthy
+##    env_file:
+##      - ./api-integration-svc/.env
+##
+##    networks:
+##      - backend
+##
+volumes:
+  pgdata_integration:
+
+networks:
+  backend:
+    driver: bridge

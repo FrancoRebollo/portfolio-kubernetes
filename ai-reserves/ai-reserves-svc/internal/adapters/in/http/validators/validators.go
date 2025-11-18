@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/FrancoRebollo/api-integration-svc/internal/domain"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/domain"
 	"github.com/gin-gonic/gin"
 )
 

@@ -10,10 +10,10 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	"github.com/FrancoRebollo/api-integration-svc/internal/adapters/in/http/middlewares"
-	"github.com/FrancoRebollo/api-integration-svc/internal/domain"
-	"github.com/FrancoRebollo/api-integration-svc/internal/platform/config"
-	configconstants "github.com/FrancoRebollo/api-integration-svc/internal/platform/config/constants"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/adapters/in/http/middlewares"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/domain"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/platform/config"
+	configconstants "github.com/FrancoRebollo/ai-reserves-svc/internal/platform/config/constants"
 )
 
 // Interfaces mínimas que deben cumplir tus handlers

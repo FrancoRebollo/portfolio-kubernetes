@@ -11,10 +11,10 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/FrancoRebollo/api-integration-svc/internal/platform/config"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/platform/config"
 
-	"github.com/FrancoRebollo/api-integration-svc/internal/domain"
-	"github.com/FrancoRebollo/api-integration-svc/internal/ports"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/domain"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/ports"
 )
 
 type ApiIntegrationService struct {

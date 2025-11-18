@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/FrancoRebollo/api-integration-svc/internal/platform/config"
-	"github.com/FrancoRebollo/api-integration-svc/internal/platform/logger"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/platform/config"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/platform/logger"
 
 	"github.com/lib/pq"
 )

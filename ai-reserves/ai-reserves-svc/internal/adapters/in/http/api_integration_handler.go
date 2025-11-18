@@ -3,10 +3,10 @@ package http
 import (
 	"net/http"
 
-	"github.com/FrancoRebollo/api-integration-svc/internal/adapters/in/http/dto"
-	"github.com/FrancoRebollo/api-integration-svc/internal/domain"
-	"github.com/FrancoRebollo/api-integration-svc/internal/platform/logger"
-	"github.com/FrancoRebollo/api-integration-svc/internal/ports"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/adapters/in/http/dto"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/domain"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/platform/logger"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/ports"
 
 	"github.com/gin-gonic/gin"
 )

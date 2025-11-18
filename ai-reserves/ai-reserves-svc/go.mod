@@ -1,4 +1,4 @@
-module github.com/FrancoRebollo/api-integration-svc
+module github.com/FrancoRebollo/ai-reserves-svc
 
 go 1.23
 
@@ -6,6 +6,8 @@ require (
 	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/lib/pq v1.10.9
+	github.com/streadway/amqp v1.1.0
+	github.com/ulule/limiter/v3 v3.11.2
 )
 
 require (
@@ -19,9 +21,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/streadway/amqp v1.1.0 // indirect
 	github.com/swaggo/swag v1.16.3 // indirect
-	github.com/ulule/limiter/v3 v3.11.2 // indirect
 	golang.org/x/tools v0.23.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

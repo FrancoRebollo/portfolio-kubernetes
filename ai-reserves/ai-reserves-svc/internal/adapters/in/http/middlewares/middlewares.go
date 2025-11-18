@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/FrancoRebollo/api-integration-svc/internal/domain"
-	"github.com/FrancoRebollo/api-integration-svc/internal/platform/logger"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/domain"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/platform/logger"
 	"github.com/ulule/limiter/v3"
 	ginLimiter "github.com/ulule/limiter/v3/drivers/middleware/gin"
 	memoryStore "github.com/ulule/limiter/v3/drivers/store/memory"

@@ -7,13 +7,13 @@ import (
 	"os"
 	"time"
 
-	httpin "github.com/FrancoRebollo/api-integration-svc/internal/adapters/in/http"
-	pg "github.com/FrancoRebollo/api-integration-svc/internal/adapters/out/postgres"
-	"github.com/FrancoRebollo/api-integration-svc/internal/adapters/rabbitmq"
-	"github.com/FrancoRebollo/api-integration-svc/internal/application"
-	"github.com/FrancoRebollo/api-integration-svc/internal/platform/config"
-	"github.com/FrancoRebollo/api-integration-svc/internal/platform/logger"
-	"github.com/FrancoRebollo/api-integration-svc/internal/ports"
+	httpin "github.com/FrancoRebollo/ai-reserves-svc/internal/adapters/in/http"
+	pg "github.com/FrancoRebollo/ai-reserves-svc/internal/adapters/out/postgres"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/adapters/rabbitmq"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/application"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/platform/config"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/platform/logger"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/ports"
 )
 
 func main() {

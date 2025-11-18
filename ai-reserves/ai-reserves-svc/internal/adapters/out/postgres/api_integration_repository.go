@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/FrancoRebollo/api-integration-svc/internal/domain"
-	"github.com/FrancoRebollo/api-integration-svc/internal/platform/logger"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/domain"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/platform/logger"
 )
 
 type ApiIntegrationRepository struct {

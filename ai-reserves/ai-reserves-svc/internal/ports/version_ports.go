@@ -3,7 +3,7 @@ package ports
 import (
 	"context"
 
-	"github.com/FrancoRebollo/api-integration-svc/internal/domain"
+	"github.com/FrancoRebollo/ai-reserves-svc/internal/domain"
 )
 
 type VersionService interface {

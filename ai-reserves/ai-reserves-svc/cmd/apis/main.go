@@ -50,7 +50,7 @@ func main() {
 	//    Si tus constructores reales difieren, cambiá estas 2 líneas únicamente:
 	versionRepository := pg.NewVersionRepository(*dbPostgres)        // <- AJUSTAR si tu firma real difiere
 	healthcheckRepository := pg.NewHealthcheckRepository(dbPostgres) // <- AJUSTAR si tu firma real difiere
-	apiIntegrationRepository := pg.NewApiIntegrationRepository(dbPostgres)
+	AiReservesRepository := pg.NewAiReservesRepository(dbPostgres)
 
 	fmt.Println("🐇 Iniciando conexión a RabbitMQ...")
 	amqpURL := os.Getenv("RABBITMQ_URL")
@@ -68,15 +68,15 @@ func main() {
 	// 4) Servicios (application)
 	versionService := application.NewVersionService(versionRepository, *cfg.App)             // <- AJUSTAR a tu firma real
 	healthcheckService := application.NewHealthcheckService(healthcheckRepository, *cfg.App) // <- AJUSTAR a tu firma real
-	apiIntegrationService := application.NewApiIntegrationService(apiIntegrationRepository, *cfg.App, messageQueue, httpClient)
+	AiReservesService := application.NewAiReservesService(AiReservesRepository, *cfg.App, messageQueue, httpClient)
 
 	// 5) Handlers (adapters in/http)
 	versionHandler := httpin.NewVersionHandler(versionService) // debe cumplir la interface del router
 	healthcheckHandler := httpin.NewHealthcheckHandler(healthcheckService)
-	apiIntegrationHandler := httpin.NewApiIntegrationHandler(apiIntegrationService)
+	AiReservesHandler := httpin.NewAiReservesHandler(AiReservesService)
 
 	// 6) Router
-	rt, err := httpin.NewRouter(cfg.HTTP, versionHandler, *healthcheckHandler, *apiIntegrationHandler)
+	rt, err := httpin.NewRouter(cfg.HTTP, versionHandler, *healthcheckHandler, *AiReservesHandler)
 	if err != nil {
 		fmt.Println(err)
 	}

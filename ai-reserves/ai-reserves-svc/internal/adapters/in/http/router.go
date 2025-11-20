@@ -29,7 +29,7 @@ func NewRouter(
 	cfg *config.HTTP,
 	versionHandler VersionHandler,
 	healthcheckHandler HealthcheckHandler,
-	apiIntegrationHandler ApiIntegrationHandler,
+	AiReservesHandler AiReservesHandler,
 ) (*Router, error) {
 
 	// Modo
@@ -64,13 +64,13 @@ func NewRouter(
 		api.Group("/healthcheck").
 			GET("", middlewares.ValidateGetHealthcheck, healthcheckHandler.GetHealthcheck)
 	}
-
-	api_int := r.Group("/api-integration")
-	{
-		api_int.Group("/webhook/event").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), apiIntegrationHandler.PushEventToQueue)
-		api_int.Group("/external-api/request").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), apiIntegrationHandler.MakeRequest)
-	}
-
+	/*
+		api_int := r.Group("/api-integration")
+		{
+			api_int.Group("/webhook/event").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.PushEventToQueue)
+			api_int.Group("/external-api/request").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.MakeRequest)
+		}
+	*/
 	// 404
 	r.NoRoute(func(c *gin.Context) {
 		err := domain.HealthcheckError{

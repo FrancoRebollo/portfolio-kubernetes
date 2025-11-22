@@ -21,11 +21,15 @@ spec:
         envFrom:
         - secretRef:
             name: postgres-secret
-        - configMapRef:
-            name: postgres-config
         volumeMounts:
         - name: postgres-storage
           mountPath: /var/lib/postgresql/data
+        - name: initdb
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: initdb
+        configMap:
+          name: postgres-initdb
   volumeClaimTemplates:
   - metadata:
       name: postgres-storage

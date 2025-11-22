@@ -39,3 +39,5 @@ type HealthcheckError struct {
 func (e *HealthcheckError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Code, e.Message)
 }
+
+var ErrDuplicateEvent = errors.New("duplicate event ignored")

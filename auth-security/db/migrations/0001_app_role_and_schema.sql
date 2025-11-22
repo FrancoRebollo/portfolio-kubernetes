@@ -247,6 +247,18 @@ INSERT INTO sec.location (id_location, fecha_last_update, actualizado_por) VALUE
 INSERT INTO sec.location (id_location, fecha_last_update, actualizado_por) VALUES (22, CURRENT_DATE, 'FRANCO');
 INSERT INTO sec.location (id_location, fecha_last_update, actualizado_por) VALUES (23, CURRENT_DATE, 'FRANCO');
 
+CREATE TABLE SEC.outbox_events (
+    id              UUID PRIMARY KEY,
+    event_type      VARCHAR(100) NOT NULL,
+    routing_key     VARCHAR(200) NOT NULL,
+    origin          VARCHAR(100) NOT NULL,
+    payload_json    JSONB NOT NULL,
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    sent_at         TIMESTAMP,
+    failed_at       TIMESTAMP,
+    status          VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+    -- allowed: 'pending', 'sent', 'failed'
+);
 
 -- Return to superuser at the end (optional)
 RESET ROLE;

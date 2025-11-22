@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/FrancoRebollo/auth-security-svc/internal/domain"
 	"github.com/FrancoRebollo/auth-security-svc/internal/platform/utils"
+	"github.com/google/uuid"
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -825,4 +827,147 @@ func (v SecurityRepository) CambioPasswordByLogin(ctx context.Context, loginName
 	}
 
 	return nil
+}
+
+func (v SecurityRepository) WithTransaction(ctx context.Context, fn func(tx *sql.Tx) error) error {
+	tx, err := v.dbPost.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	if err := fn(tx); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (v *SecurityRepository) CreateOutboxEvent(ctx context.Context, tx *sql.Tx, evt domain.Event) (domain.Event, error) {
+	// 1. Generate event ID (idempotency key)
+	evt.ID = uuid.New().String()
+	evt.Timestamp = time.Now()
+
+	// 2. Marshal payload to JSONB
+	rawPayload, err := json.Marshal(evt.Payload)
+	if err != nil {
+		return domain.Event{}, fmt.Errorf("failed to marshal event payload: %w", err)
+	}
+
+	// 3. Insert into outbox table
+	query := `
+        INSERT INTO SEC.outbox_events (
+            id, event_type, routing_key, origin, payload_json, created_at, status
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+    `
+
+	_, err = tx.ExecContext(
+		ctx,
+		query,
+		evt.ID,
+		evt.Type,
+		evt.RoutingKey,
+		evt.Origin,
+		rawPayload,
+		evt.Timestamp,
+	)
+
+	if err != nil {
+		return domain.Event{}, fmt.Errorf("failed to insert outbox event: %w", err)
+	}
+
+	return evt, nil
+}
+
+func (v *SecurityRepository) MarkOutboxAsSent(ctx context.Context, id string) error {
+	query := `
+        UPDATE outbox_events
+        SET status = 'SENT', sent_at = NOW()
+        WHERE id = $1
+    `
+
+	_, err := v.dbPost.GetDB().ExecContext(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to mark outbox event as sent: %w", err)
+	}
+
+	return nil
+}
+
+func (v *SecurityRepository) MarkOutboxAsFailed(ctx context.Context, id string) error {
+	query := `
+        UPDATE outbox_events
+        SET status = 'FAILED', failed_at = NOW()
+        WHERE id = $1
+    `
+
+	_, err := v.dbPost.GetDB().ExecContext(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to mark outbox event as failed: %w", err)
+	}
+
+	return nil
+}
+
+func (r *SecurityRepository) GetPendingEvents(ctx context.Context, limit int) ([]domain.Event, error) {
+	query := `
+        SELECT 
+            id,
+            event_type,
+            routing_key,
+            origin,
+            payload_json,
+            created_at
+        FROM sec.outbox_events
+        WHERE status = 'PENDING'
+        ORDER BY created_at ASC
+        LIMIT $1
+    `
+
+	rows, err := r.dbPost.GetDB().QueryContext(ctx, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("query pending outbox events: %w", err)
+	}
+	defer rows.Close()
+
+	var events []domain.Event
+
+	for rows.Next() {
+		var (
+			id         string
+			eventType  string
+			routingKey string
+			origin     string
+			payloadRaw []byte
+			createdAt  time.Time
+		)
+
+		if err := rows.Scan(&id, &eventType, &routingKey, &origin, &payloadRaw, &createdAt); err != nil {
+			return nil, fmt.Errorf("scan outbox event: %w", err)
+		}
+
+		// Convertir JSON → interface{}
+		var payload interface{}
+		if err := json.Unmarshal(payloadRaw, &payload); err != nil {
+			return nil, fmt.Errorf("unmarshal payload for event %s: %w", id, err)
+		}
+
+		evt := domain.Event{
+			ID:         id,
+			Type:       eventType,
+			RoutingKey: routingKey,
+			Origin:     origin,
+			Timestamp:  createdAt,
+			Payload:    payload,
+		}
+
+		events = append(events, evt)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate rows: %w", err)
+	}
+
+	return events, nil
 }

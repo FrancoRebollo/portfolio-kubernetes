@@ -64,13 +64,34 @@ func NewRouter(
 		api.Group("/healthcheck").
 			GET("", middlewares.ValidateGetHealthcheck, healthcheckHandler.GetHealthcheck)
 	}
-	/*
-		api_int := r.Group("/api-integration")
-		{
-			api_int.Group("/webhook/event").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.PushEventToQueue)
-			api_int.Group("/external-api/request").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.MakeRequest)
-		}
-	*/
+
+	ai_res := r.Group("/reserves")
+	{
+		ai_res.Group("/create-person").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.CreatePersona)
+		ai_res.Group("/upd-atribute-person").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.UpdAtributoPersona)
+		ai_res.Group("/upd-person").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.UpdPersona)
+
+		ai_res.Group("/upsert-config-person").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.UpsertConfigPersona)
+		ai_res.Group("/create-unidad-reserva").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.CreateUnidadReserva)
+		ai_res.Group("/create-tipo-unidad-reserva").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.CreateTipoUnidadReserva)
+
+		ai_res.Group("/create-sub-tipo-unidad-reserva").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.CreateSubTipoUnidadReserva)
+		ai_res.Group("/upd-unidad-reserva").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.ModifUnidadReserva)
+		ai_res.Group("/upd-tipo-unidad-reserva").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.ModifTipoUnidadReserva)
+
+		ai_res.Group("/upd-sub-tipo-unidad-reserva").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.ModifSubTipoUnidadReserva)
+		ai_res.Group("/create-reserve").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.CreateReserve)
+		ai_res.Group("/cancel-reserve").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.CancelReserve)
+
+		ai_res.Group("/search-reserve").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.SearchReserve)
+		ai_res.Group("/init-agenda").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.InitAgenda)
+		ai_res.Group("/get-info-person").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.GetInfoPersona)
+
+		ai_res.Group("/get-reserves-person").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.GetReservasPersona)
+		ai_res.Group("/get-reserves-unidad-reserva").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.GetReservasUnidadReserva)
+
+	}
+
 	// 404
 	r.NoRoute(func(c *gin.Context) {
 		err := domain.HealthcheckError{

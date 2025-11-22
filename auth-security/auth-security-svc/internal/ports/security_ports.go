@@ -2,6 +2,7 @@ package ports
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/FrancoRebollo/auth-security-svc/internal/adapters/in/http/dto"
 	"github.com/FrancoRebollo/auth-security-svc/internal/domain"
@@ -19,6 +20,7 @@ type SecurityService interface {
 	GetJWTAPI(ctx context.Context, refreshToken string, accessTokenParam string) (string, error)
 	CheckApiKeyExpiradaAPI(ctx context.Context, apiKey string) (bool, error)
 	RecuperacionPasswordAPI(ctx context.Context, recuperacionPassword dto.ReqRecoveryPasswordDos) error
+	ProcessOutboxEvents(ctx context.Context) error
 }
 
 type SecurityRepository interface {
@@ -37,4 +39,13 @@ type SecurityRepository interface {
 	PersistToken(ctx context.Context, credentials domain.CredentialsToken) error
 	CheckApiKeyExpirada(ctx context.Context, apiKey string) (bool, error)
 	CambioPasswordByLogin(ctx context.Context, loginName string, newPassword string) error
+	WithTransaction(ctx context.Context, fn func(tx *sql.Tx) error) error
+	CreateOutboxEvent(ctx context.Context, tx *sql.Tx, evt domain.Event) (domain.Event, error)
+	MarkOutboxAsFailed(ctx context.Context, id string) error
+	MarkOutboxAsSent(ctx context.Context, id string) error
+	GetPendingEvents(ctx context.Context, limit int) ([]domain.Event, error)
+}
+
+type MessageQueue interface {
+	Publish(ctx context.Context, event domain.Event) error
 }

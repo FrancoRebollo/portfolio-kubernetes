@@ -1,39 +1,39 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: api-integration
+  name: ai-reserves
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: api-integration
+      app: ai-reserves
   template:
     metadata:
       labels:
-        app: api-integration
+        app: ai-reserves
     spec:
       containers:
-      - name: api-integration
-        image: francoluciano/api-integration:latest
+      - name: ai-reserves
+        image: francoluciano/ai-reserves:latest
         ports:
-        - containerPort: 3002
+        - containerPort: 3006
 
         envFrom:
         - configMapRef:
-            name: api-integration-config
+            name: ai-reserves-config
         - secretRef:
-            name: api-integration-secret
+            name: ai-reserves-secret
 
         readinessProbe:
           httpGet:
             path: /api/healthcheck
-            port: 3002
+            port: 3006
           initialDelaySeconds: 5
           periodSeconds: 5
 
         livenessProbe:
           httpGet:
             path: /api/healthcheck
-            port: 3002
+            port: 3006
           initialDelaySeconds: 10
           periodSeconds: 10

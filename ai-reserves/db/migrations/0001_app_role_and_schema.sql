@@ -37,9 +37,12 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA ai_res
 
 -- Personas que usan la aplicación
 CREATE TABLE ai_res.personas (
-    id SERIAL PRIMARY KEY,
-    nombre_completo VARCHAR(150) NOT NULL,
-    documento VARCHAR(50),
+    id INT PRIMARY KEY,
+    nombre VARCHAR(150) NOT NULL default 'PROVISORIO',
+    apellido_razon_social varchar(150) not null DEFAULT 'PROVISORIO',
+    persona_juridica  varchar(1) not null default 'N',
+    tipo_doc_persona VARCHAR(50),
+    nro_doc_persona varchar(70),
     email VARCHAR(100),
     telefono VARCHAR(30),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

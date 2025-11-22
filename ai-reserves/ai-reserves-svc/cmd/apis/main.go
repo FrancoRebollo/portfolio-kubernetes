@@ -2,12 +2,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	httpin "github.com/FrancoRebollo/ai-reserves-svc/internal/adapters/in/http"
+	eventin "github.com/FrancoRebollo/ai-reserves-svc/internal/adapters/in/rabbitmq" // 🧠 nuevo
 	pg "github.com/FrancoRebollo/ai-reserves-svc/internal/adapters/out/postgres"
 	"github.com/FrancoRebollo/ai-reserves-svc/internal/adapters/rabbitmq"
 	"github.com/FrancoRebollo/ai-reserves-svc/internal/application"
@@ -75,16 +79,58 @@ func main() {
 	healthcheckHandler := httpin.NewHealthcheckHandler(healthcheckService)
 	AiReservesHandler := httpin.NewAiReservesHandler(AiReservesService)
 
-	// 6) Router
+	// 7️⃣ Iniciar consumer RabbitMQ 🧠 NUEVO BLOQUE
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	Consumer := eventin.NewEventConsumer(AiReservesService, rabbitMQAdapter)
+	queueName := os.Getenv("USER_CREATED_QUEUE")
+	if queueName == "" {
+		queueName = "user_created_q"
+	}
+
+	go Consumer.Start(ctx, queueName)
+	logger.LoggerInfo().Infof("🎧 Listening RabbitMQ queue: %s", queueName)
+
+	// 8️⃣ Señales para cerrar graceful
+	go func() {
+		stop := make(chan os.Signal, 1)
+		signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+		<-stop
+		cancel()
+		rabbitMQAdapter.Close()
+		logger.LoggerInfo().Info("🛑 Graceful shutdown consumer")
+		os.Exit(0)
+	}()
+
+	// 9️⃣ Inicializar Router HTTP
 	rt, err := httpin.NewRouter(cfg.HTTP, versionHandler, *healthcheckHandler, *AiReservesHandler)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	// 7) Server
-	address := fmt.Sprintf("%s:%s", cfg.HTTP.Url, cfg.HTTP.Port)
-	if err := rt.Listen(address); err != nil {
-		logger.LoggerError().Errorf("No se pudo iniciar el servidor: %s", err.Error())
-		os.Exit(1)
+	srv := &http.Server{
+		Addr:    fmt.Sprintf("%s:%s", cfg.HTTP.Url, cfg.HTTP.Port),
+		Handler: rt, // el router de Gin
 	}
+
+	go func() {
+		fmt.Println("🚀 Iniciando servidor HTTP en", srv.Addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			fmt.Println("❌ Error al iniciar servidor:", err)
+			os.Exit(1)
+		}
+	}()
+	/*
+		// 🔟 Servidor HTTP
+		address := fmt.Sprintf("%s:%s", cfg.HTTP.Url, cfg.HTTP.Port)
+		fmt.Println("🚀 Iniciando servidor HTTP en", address)
+		if err := rt.Listen(address); err != nil {
+			fmt.Println("❌ Error al iniciar servidor:", err)
+			os.Exit(1)
+		}
+	*/
+	fmt.Println("⌛ Esperando ctx.Done()...")
+	<-ctx.Done()
+	fmt.Println("✅ Microservicio finalizado correctamente")
 }

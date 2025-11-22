@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	httpin "github.com/FrancoRebollo/auth-security-svc/internal/adapters/in/http"
 	eventin "github.com/FrancoRebollo/auth-security-svc/internal/adapters/in/rabbitmq" // 🧠 nuevo
@@ -17,7 +18,26 @@ import (
 	"github.com/FrancoRebollo/auth-security-svc/internal/application"
 	"github.com/FrancoRebollo/auth-security-svc/internal/platform/config"
 	"github.com/FrancoRebollo/auth-security-svc/internal/platform/logger"
+	"github.com/FrancoRebollo/auth-security-svc/internal/ports"
 )
+
+func startOutboxWorker(ctx context.Context, svc ports.SecurityService) {
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err := svc.ProcessOutboxEvents(ctx); err != nil {
+					fmt.Println("❌ Outbox worker error:", err)
+				}
+			}
+		}
+	}()
+}
 
 func main() {
 	// 1️⃣ Configuración global
@@ -50,6 +70,7 @@ func main() {
 		log.Fatalf("❌ Failed to connect to RabbitMQ: %v", err)
 	}
 	defer rmq.Close()
+	var messageQueue ports.MessageQueue = rmq
 
 	// 4️⃣ Repositorios (outbound adapters)
 	versionRepository := pg.NewVersionRepository(*dbPostgres)
@@ -59,7 +80,7 @@ func main() {
 	// 5️⃣ Servicios (application layer)
 	versionService := application.NewVersionService(versionRepository, *cfg.App)
 	healthcheckService := application.NewHealthcheckService(healthcheckRepository, *cfg.App)
-	securityService := application.NewSecurityService(securityRepository, *cfg.App)
+	securityService := application.NewSecurityService(securityRepository, *cfg.App, messageQueue)
 
 	// 6️⃣ Handlers HTTP (inbound adapters)
 	versionHandler := httpin.NewVersionHandler(versionService)
@@ -108,6 +129,10 @@ func main() {
 			os.Exit(1)
 		}
 	}()
+
+	var svc ports.SecurityService = securityService
+
+	startOutboxWorker(ctx, svc)
 	/*
 		// 🔟 Servidor HTTP
 		address := fmt.Sprintf("%s:%s", cfg.HTTP.Url, cfg.HTTP.Port)

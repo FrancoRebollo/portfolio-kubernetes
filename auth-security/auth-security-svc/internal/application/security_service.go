@@ -2,6 +2,8 @@ package application
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -18,29 +20,73 @@ import (
 type SecurityService struct {
 	hr   ports.SecurityRepository
 	conf config.App
+	rmq  ports.MessageQueue
 }
 
-func NewSecurityService(hr ports.SecurityRepository, conf config.App) *SecurityService {
+func NewSecurityService(hr ports.SecurityRepository, conf config.App, rmq ports.MessageQueue) *SecurityService {
 	return &SecurityService{
 		hr,
 		conf,
+		rmq,
 	}
 }
 
-func (hs *SecurityService) CreateUserAPI(ctx context.Context, reqAltaUser domain.UserCreated) (*domain.UserCreated, error) {
-	//var serviceErr error
-	fmt.Println(reqAltaUser.CanalDigital)
-	fmt.Println(reqAltaUser.LoginName)
-	userCreated, err := hs.hr.CreateUser(ctx, reqAltaUser)
+func (hs *SecurityService) CreateUserAPI(ctx context.Context, req domain.UserCreated) (*domain.UserCreated, error) {
 
+	var (
+		userCreated *domain.UserCreated
+		//event       domain.Event
+	)
+
+	// -------------------------------------------
+	// 1. CONTROLLED TRANSACTION
+	// -------------------------------------------
+	err := hs.hr.WithTransaction(ctx, func(tx *sql.Tx) error {
+
+		// 1.1 Create user
+		uc, err := hs.hr.CreateUser(ctx, req)
+		if err != nil {
+			// ❗ If it's a duplicate event → no rollback
+			if errors.Is(err, domain.ErrDuplicateEvent) {
+				fmt.Println("⚠️ Duplicate event detected. Skipping publish.")
+				userCreated = uc
+				return nil
+			}
+			return err // rollback
+		}
+		userCreated = uc
+
+		fmt.Println("✅ User created in DB")
+
+		// Build the event struct USING the user created
+		eventToStore := domain.Event{
+			Type:       "user.created",
+			RoutingKey: os.Getenv("ROUTINGKEY"),
+			Origin:     os.Getenv("ORIGIN") + os.Getenv("APP_ENVIRONMENT"),
+			Payload:    userCreated, // this is your UserCreated struct
+		}
+
+		// Call repository with tx + event
+		_, err = hs.hr.CreateOutboxEvent(ctx, tx, eventToStore)
+		// 1.2 Persist event in outbox
+		if err != nil {
+			return err // rollback
+		}
+
+		fmt.Println("📝 Event stored in Outbox table")
+
+		return nil // commit
+	})
+
+	// -------------------------------------------
+	// 2. CHECK TRANSACTION RESULT
+	// -------------------------------------------
 	if err != nil {
-		/*
-			serviceErr = mapServiceError(err)
-			logger.LoggerError().WithError(err).Error(serviceErr)
-			return &domain.UserCreated{}, serviceErr
-		*/
-		return &domain.UserCreated{}, err
+		fmt.Println("🔻 Transaction rolled back due to error")
+		return nil, err
 	}
+
+	fmt.Println("📨 Event published to RabbitMQ")
 
 	return userCreated, nil
 }
@@ -278,6 +324,39 @@ func (s *SecurityService) RecuperacionPasswordAPI(ctx context.Context, recuperac
 
 	if err := s.hr.CambioPasswordByLogin(ctx, recuperacionPassword.LoginName, newPassword); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (s *SecurityService) ProcessOutboxEvents(ctx context.Context) error {
+	fmt.Println("Reading in ProcessOutboxEvents")
+	// Leemos hasta 50 eventos para evitar saturar RabbitMQ
+	events, err := s.hr.GetPendingEvents(ctx, 50)
+	if err != nil {
+		return fmt.Errorf("get pending outbox events: %w", err)
+	}
+
+	for _, evt := range events {
+
+		// Intentamos publicar en RabbitMQ
+		if err := s.rmq.Publish(ctx, evt); err != nil {
+			fmt.Printf("❌ Error publishing event %s: %v\n", evt.ID, err)
+			// Se marca como failed (pero no interrumpe el batch)
+			err = s.hr.MarkOutboxAsFailed(ctx, evt.ID)
+			if err != nil {
+				fmt.Println("not posible mark the event as failed to send")
+			}
+			continue
+		}
+
+		// Si se publicó correctamente → marcar como enviado
+		if err := s.hr.MarkOutboxAsSent(ctx, evt.ID); err != nil {
+			fmt.Printf("⚠️ Error marking event as sent %s: %v\n", evt.ID, err)
+			continue
+		}
+
+		fmt.Printf("📨 Event %s sent successfully\n", evt.ID)
 	}
 
 	return nil

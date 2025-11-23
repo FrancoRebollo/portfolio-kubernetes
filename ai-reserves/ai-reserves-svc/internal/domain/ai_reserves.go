@@ -49,17 +49,26 @@ type ConfigPersona struct {
 
 type UnidadReserva struct {
 	IDUnidadReserva int
+	Nombre          string
 	Descripcion     string
 }
 
 type TipoUnidadReserva struct {
-	IDUnidadReserva int
-	Descripcion     string
+	IDUnidadReserva     int
+	IDTipoUnidadReserva int
+	UnidadReserva       string
+	Nombre              string
+	Descripcion         string
 }
 
 type SubTipoUnidadReserva struct {
-	IDUnidadReserva int
-	Descripcion     string
+	IDUnidadReserva        int
+	UnidadReserva          string
+	IDTipoUnidadReserva    int
+	TipoUnidadReserva      string
+	IDSubTipoUnidadReserva int
+	Nombre                 string
+	Descripcion            string
 }
 
 type UnidadReservaModif struct {

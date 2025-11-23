@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -342,16 +343,261 @@ func (hr *AiReservesRepository) UpsertConfigPersona(ctx context.Context, req dom
 	return nil
 }
 
-func (hr *AiReservesRepository) CreateUnidadReserva(ctx context.Context, req domain.UnidadReserva) error {
-	return nil
+func (hr *AiReservesRepository) CreateUnidadReserva(ctx context.Context, req *domain.UnidadReserva) (int, error) {
+
+	// 1) Verificar si existe por nombre
+	var idExistente int
+	err := hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT id FROM ai_res.unidad_reserva WHERE nombre = $1`,
+		req.Nombre,
+	).Scan(&idExistente)
+
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return 0, fmt.Errorf("error verificando existencia de unidad_reserva: %w", err)
+	}
+
+	// --------------------------------------------------------------------
+	// 2) SI YA EXISTE → actualizar descripcion
+	// --------------------------------------------------------------------
+	if idExistente > 0 {
+		_, err := hr.dbPost.GetDB().ExecContext(ctx,
+			`UPDATE ai_res.unidad_reserva
+			   SET descripcion = $2,
+			       updated_at = CURRENT_TIMESTAMP,
+			       updated_by = 'ai_reserves'
+			 WHERE id = $1`,
+			idExistente,
+			req.Descripcion,
+		)
+		if err != nil {
+			return 0, fmt.Errorf("error actualizando unidad_reserva: %w", err)
+		}
+
+		fmt.Printf("🔄 UnidadReserva actualizada (ID=%d)\n", idExistente)
+		return idExistente, nil
+	}
+
+	// --------------------------------------------------------------------
+	// 3) SI NO EXISTE → Insertar y devolver ID generado
+	// --------------------------------------------------------------------
+	var newID int
+	err = hr.dbPost.GetDB().QueryRowContext(ctx,
+		`INSERT INTO ai_res.unidad_reserva
+			(nombre, descripcion, created_by)
+		 VALUES ($1, $2, 'ai_reserves')
+		 RETURNING id`,
+		req.Nombre,
+		req.Descripcion,
+	).Scan(&newID)
+
+	if err != nil {
+		return 0, fmt.Errorf("error insertando unidad_reserva: %w", err)
+	}
+
+	fmt.Printf("🆕 UnidadReserva creada (ID=%d)\n", newID)
+	return newID, nil
 }
 
-func (hr *AiReservesRepository) CreateTipoUnidadReserva(ctx context.Context, req domain.TipoUnidadReserva) error {
-	return nil
+func (hr *AiReservesRepository) CreateTipoUnidadReserva(ctx context.Context, req domain.TipoUnidadReserva) (int, error) {
+
+	// ---------------------------------------------------------------------
+	// 1) Verificar que la UnidadReserva exista
+	// ---------------------------------------------------------------------
+	var existsUnidad bool
+
+	err := hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT EXISTS(
+			SELECT 1 
+			  FROM ai_res.unidad_reserva 
+			 WHERE id = $1
+		)`,
+		req.IDUnidadReserva,
+	).Scan(&existsUnidad)
+
+	if err != nil {
+		return 0, fmt.Errorf("error verificando unidad_reserva: %w", err)
+	}
+
+	if !existsUnidad {
+		return 0, fmt.Errorf("unidad_reserva con ID=%d no existe", req.IDUnidadReserva)
+	}
+
+	// ---------------------------------------------------------------------
+	// 2) Verificar si el TipoUnidadReserva ya existe dentro de esa unidad
+	// ---------------------------------------------------------------------
+	var idTipoExistente int
+
+	err = hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT id
+		   FROM ai_res.tipo_unidad_reserva
+		  WHERE id_unidad_reserva = $1
+		    AND nombre = $2`,
+		req.IDUnidadReserva,
+		req.Nombre,
+	).Scan(&idTipoExistente)
+
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return 0, fmt.Errorf("error verificando tipo_unidad_reserva: %w", err)
+	}
+
+	// ---------------------------------------------------------------------
+	// 3) SI YA EXISTE → actualizar
+	// ---------------------------------------------------------------------
+	if idTipoExistente > 0 {
+		_, err := hr.dbPost.GetDB().ExecContext(ctx,
+			`UPDATE ai_res.tipo_unidad_reserva
+			   SET descripcion = $2,
+			       updated_at = CURRENT_TIMESTAMP,
+			       updated_by = 'ai_reserves'
+			 WHERE id = $1`,
+			idTipoExistente,
+			req.Descripcion,
+		)
+		if err != nil {
+			return 0, fmt.Errorf("error actualizando tipo_unidad_reserva: %w", err)
+		}
+
+		fmt.Printf("🔄 TipoUnidadReserva actualizado (ID=%d)\n", idTipoExistente)
+		return idTipoExistente, nil
+	}
+
+	// ---------------------------------------------------------------------
+	// 4) SI NO EXISTE → insertar nuevo registro
+	// ---------------------------------------------------------------------
+	var newID int
+
+	err = hr.dbPost.GetDB().QueryRowContext(ctx,
+		`INSERT INTO ai_res.tipo_unidad_reserva
+		    (id_unidad_reserva, nombre, descripcion, created_by)
+		 VALUES ($1, $2, $3, 'ai_reserves')
+		 RETURNING id`,
+		req.IDUnidadReserva,
+		req.Nombre,
+		req.Descripcion,
+	).Scan(&newID)
+
+	if err != nil {
+		return 0, fmt.Errorf("error insertando tipo_unidad_reserva: %w", err)
+	}
+
+	fmt.Printf("🆕 TipoUnidadReserva creado (ID=%d)\n", newID)
+	return newID, nil
 }
 
-func (hr *AiReservesRepository) CreateSubTipoUnidadReserva(ctx context.Context, req domain.SubTipoUnidadReserva) error {
-	return nil
+func (hr *AiReservesRepository) CreateSubTipoUnidadReserva(
+	ctx context.Context,
+	req domain.SubTipoUnidadReserva,
+) (int, error) {
+
+	// ---------------------------------------------------------------------
+	// 1) Verificar que la UnidadReserva exista
+	// ---------------------------------------------------------------------
+	var existsUnidad bool
+
+	err := hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT EXISTS(
+			SELECT 1 
+			  FROM ai_res.unidad_reserva 
+			 WHERE id = $1
+		)`,
+		req.IDUnidadReserva,
+	).Scan(&existsUnidad)
+
+	if err != nil {
+		return 0, fmt.Errorf("error verificando unidad_reserva: %w", err)
+	}
+
+	if !existsUnidad {
+		return 0, fmt.Errorf("unidad_reserva con ID=%d no existe", req.IDUnidadReserva)
+	}
+
+	// ---------------------------------------------------------------------
+	// 2) Verificar que el TipoUnidad exista y pertenezca a esa Unidad
+	// ---------------------------------------------------------------------
+	var existsTipo bool
+
+	err = hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT EXISTS(
+			SELECT 1
+			  FROM ai_res.tipo_unidad_reserva
+			 WHERE id = $1
+			   AND id_unidad_reserva = $2
+		)`,
+		req.IDTipoUnidadReserva,
+		req.IDUnidadReserva,
+	).Scan(&existsTipo)
+
+	if err != nil {
+		return 0, fmt.Errorf("error verificando tipo_unidad_reserva: %w", err)
+	}
+
+	if !existsTipo {
+		return 0, fmt.Errorf("tipo_unidad_reserva ID=%d no pertenece a unidad_reserva ID=%d",
+			req.IDTipoUnidadReserva, req.IDUnidadReserva)
+	}
+
+	// ---------------------------------------------------------------------
+	// 3) Verificar si el SubTipoUnidad ya existe
+	// ---------------------------------------------------------------------
+	var idExistente int
+
+	err = hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT id
+		   FROM ai_res.sub_tipo_unidad_reserva
+		  WHERE id_tipo_unidad_reserva = $1
+		    AND nombre = $2`,
+		req.IDTipoUnidadReserva,
+		req.Nombre,
+	).Scan(&idExistente)
+
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return 0, fmt.Errorf("error verificando sub_tipo_unidad_reserva: %w", err)
+	}
+
+	// ---------------------------------------------------------------------
+	// 4) SI EXISTE → actualizar
+	// ---------------------------------------------------------------------
+	if idExistente > 0 {
+
+		_, err := hr.dbPost.GetDB().ExecContext(ctx,
+			`UPDATE ai_res.sub_tipo_unidad_reserva
+			   SET descripcion = $2,
+			       updated_at = CURRENT_TIMESTAMP,
+			       updated_by = 'ai_reserves'
+			 WHERE id = $1`,
+			idExistente,
+			req.Descripcion,
+		)
+
+		if err != nil {
+			return 0, fmt.Errorf("error actualizando sub_tipo_unidad_reserva: %w", err)
+		}
+
+		fmt.Printf("🔄 SubTipoUnidadReserva actualizado (ID=%d)\n", idExistente)
+		return idExistente, nil
+	}
+
+	// ---------------------------------------------------------------------
+	// 5) SI NO EXISTE → insertar
+	// ---------------------------------------------------------------------
+	var newID int
+
+	err = hr.dbPost.GetDB().QueryRowContext(ctx,
+		`INSERT INTO ai_res.sub_tipo_unidad_reserva
+		    (id_tipo_unidad_reserva, nombre, descripcion, duracion_reserva_minutos, created_by)
+		 VALUES ($1, $2, $3, 0, 'ai_reserves')
+		 RETURNING id`,
+		req.IDTipoUnidadReserva,
+		req.Nombre,
+		req.Descripcion,
+	).Scan(&newID)
+
+	if err != nil {
+		return 0, fmt.Errorf("error insertando sub_tipo_unidad_reserva: %w", err)
+	}
+
+	fmt.Printf("🆕 SubTipoUnidadReserva creado (ID=%d)\n", newID)
+	return newID, nil
 }
 
 func (hr *AiReservesRepository) ModifUnidadReserva(ctx context.Context, req domain.UnidadReserva) error {

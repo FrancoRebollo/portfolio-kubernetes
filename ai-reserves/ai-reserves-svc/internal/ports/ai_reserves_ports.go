@@ -13,7 +13,7 @@ type AiReservesService interface {
 	UpdPersonaAPI(ctx context.Context, req domain.Persona) error
 	UpsertConfigPersonaAPI(ctx context.Context, req domain.ConfigPersona) error
 
-	CreateUnidadReservaAPI(ctx context.Context, req domain.UnidadReserva) error
+	CreateUnidadReservaAPI(ctx context.Context, req *domain.UnidadReserva) error
 	CreateTipoUnidadReservaAPI(ctx context.Context, req domain.TipoUnidadReserva) error
 	CreateSubTipoUnidadReservaAPI(ctx context.Context, req domain.SubTipoUnidadReserva) error
 
@@ -37,9 +37,9 @@ type AiReservesRepository interface {
 	UpdPersona(ctx context.Context, req domain.Persona) error
 	UpsertConfigPersona(ctx context.Context, req domain.ConfigPersona) error
 
-	CreateUnidadReserva(ctx context.Context, req domain.UnidadReserva) error
-	CreateTipoUnidadReserva(ctx context.Context, req domain.TipoUnidadReserva) error
-	CreateSubTipoUnidadReserva(ctx context.Context, req domain.SubTipoUnidadReserva) error
+	CreateUnidadReserva(ctx context.Context, req *domain.UnidadReserva) (int, error)
+	CreateTipoUnidadReserva(ctx context.Context, req domain.TipoUnidadReserva) (int, error)
+	CreateSubTipoUnidadReserva(ctx context.Context, req domain.SubTipoUnidadReserva) (int, error)
 
 	ModifUnidadReserva(ctx context.Context, req domain.UnidadReserva) error
 	ModifTipoUnidadReserva(ctx context.Context, req domain.TipoUnidadReserva) error

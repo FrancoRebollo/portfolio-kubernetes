@@ -60,46 +60,111 @@ func (hs *AiReservesService) UpsertConfigPersonaAPI(ctx context.Context, req dom
 	return nil
 }
 
-func (hs *AiReservesService) CreateUnidadReservaAPI(ctx context.Context, req domain.UnidadReserva) error {
+func (hs *AiReservesService) CreateUnidadReservaAPI(ctx context.Context, req *domain.UnidadReserva) error {
+
+	if _, err := hs.hr.CreateUnidadReserva(ctx, req); err != nil {
+		return err
+	}
+
 	return nil
 }
 func (hs *AiReservesService) CreateTipoUnidadReservaAPI(ctx context.Context, req domain.TipoUnidadReserva) error {
+
+	if _, err := hs.hr.CreateTipoUnidadReserva(ctx, req); err != nil {
+		return err
+	}
+
 	return nil
 }
 func (hs *AiReservesService) CreateSubTipoUnidadReservaAPI(ctx context.Context, req domain.SubTipoUnidadReserva) error {
+
+	if _, err := hs.hr.CreateSubTipoUnidadReserva(ctx, req); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (hs *AiReservesService) ModifUnidadReservaAPI(ctx context.Context, req domain.UnidadReserva) error {
+
+	if err := hs.hr.ModifUnidadReserva(ctx, req); err != nil {
+		return err
+	}
+
 	return nil
 }
 func (hs *AiReservesService) ModifTipoUnidadReservaAPI(ctx context.Context, req domain.TipoUnidadReserva) error {
+
+	if err := hs.hr.ModifTipoUnidadReserva(ctx, req); err != nil {
+		return err
+	}
+
 	return nil
 }
 func (hs *AiReservesService) ModifSubTipoUnidadReservaAPI(ctx context.Context, req domain.SubTipoUnidadReserva) error {
+
+	if err := hs.hr.ModifSubTipoUnidadReserva(ctx, req); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (hs *AiReservesService) CreateReserveAPI(ctx context.Context, req domain.Reserva) error {
+
+	if err := hs.hr.CreateReserve(ctx, req); err != nil {
+		return err
+	}
+
 	return nil
 }
 func (hs *AiReservesService) CancelReserveAPI(ctx context.Context, idReserva int) error {
+
+	if err := hs.hr.CancelReserve(ctx, idReserva); err != nil {
+		return err
+	}
+
 	return nil
 }
 func (hs *AiReservesService) SearchReserveAPI(ctx context.Context, req domain.SearchReserve) error {
+
+	if err := hs.hr.SearchReserve(ctx, req); err != nil {
+		return err
+	}
+
 	return nil
 }
 func (hs *AiReservesService) InitAgendaAPI(ctx context.Context, req domain.Agenda) error {
+
+	if err := hs.hr.InitAgenda(ctx, req); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (hs *AiReservesService) GetInfoPersonaAPI(ctx context.Context, idPersona int) error {
+
+	if err := hs.hr.GetInfoPersona(ctx, idPersona); err != nil {
+		return err
+	}
+
 	return nil
 }
 func (hs *AiReservesService) GetReservasPersonaAPI(ctx context.Context, req domain.GetReservaPersona) error {
+
+	if err := hs.hr.GetReservasPersona(ctx, req); err != nil {
+		return err
+	}
+
 	return nil
 }
 func (hs *AiReservesService) GetReservasUnidadReservaAPI(ctx context.Context, req domain.GetReservaUnidadReserva) error {
+
+	if err := hs.hr.GetReservasUnidadReserva(ctx, req); err != nil {
+		return err
+	}
+
 	return nil
 }
 

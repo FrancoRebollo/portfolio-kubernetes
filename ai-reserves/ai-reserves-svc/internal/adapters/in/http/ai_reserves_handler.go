@@ -104,7 +104,7 @@ func (h *AiReservesHandler) CreateUnidadReserva(c *gin.Context) {
 	}
 	domainReq := domain.UnidadReserva(req)
 
-	if err := h.serv.CreateUnidadReservaAPI(c, domainReq); err != nil {
+	if err := h.serv.CreateUnidadReservaAPI(c, &domainReq); err != nil {
 		newErrorResponse(c, err)
 		return
 	}

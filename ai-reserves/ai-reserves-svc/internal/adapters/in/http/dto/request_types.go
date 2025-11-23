@@ -36,9 +36,9 @@ type Persona struct {
 }
 
 type PersonaParcial struct {
-	ID       int
-	Atribute string
-	Value    string
+	ID       int    `json:"id"`
+	Atribute string `json:"atribute"`
+	Value    string `json:"value"`
 }
 
 type Event struct {
@@ -51,24 +51,33 @@ type Event struct {
 }
 
 type ConfigPersona struct {
-	IDPersona int
-	Atribute  string
-	Value     string
+	IDPersona int    `json:"id_persona"`
+	Atribute  string `json:"atribute"`
+	Value     string `json:"value"`
 }
 
 type UnidadReserva struct {
 	IDUnidadReserva int
-	Descripcion     string
+	Nombre          string `json:"nombre"`
+	Descripcion     string `json:"descripcion"`
 }
 
 type TipoUnidadReserva struct {
-	IDUnidadReserva int
-	Descripcion     string
+	IDUnidadReserva     int `json:"id_unidad_reserva"`
+	IDTipoUnidadReserva int
+	UnidadReserva       string `json:"unidad_reserva"`
+	Nombre              string `json:"nombre"`
+	Descripcion         string `json:"descripcion"`
 }
 
 type SubTipoUnidadReserva struct {
-	IDUnidadReserva int
-	Descripcion     string
+	IDUnidadReserva        int    `json:"id_unidad_reserva"`
+	UnidadReserva          string `json:"unidad_reserva"`
+	IDTipoUnidadReserva    int    `json:"id_tipo_unidad_reserva"`
+	TipoUnidadReserva      string `json:"tipo_unidad_reserva"`
+	IDSubTipoUnidadReserva int
+	Nombre                 string `json:"nombre"`
+	Descripcion            string `json:"descripcion"`
 }
 
 type UnidadReservaModif struct {

@@ -44,7 +44,7 @@ func (hs *SecurityService) CreateUserAPI(ctx context.Context, req domain.UserCre
 	err := hs.hr.WithTransaction(ctx, func(tx *sql.Tx) error {
 
 		// 1.1 Create user
-		uc, err := hs.hr.CreateUser(ctx, req)
+		uc, err := hs.hr.CreateUser(ctx, tx, req)
 		if err != nil {
 			// ❗ If it's a duplicate event → no rollback
 			if errors.Is(err, domain.ErrDuplicateEvent) {
@@ -54,7 +54,12 @@ func (hs *SecurityService) CreateUserAPI(ctx context.Context, req domain.UserCre
 			}
 			return err // rollback
 		}
-		userCreated = uc
+
+		paylaod := domain.UserCreatedPayload{
+			ID:        uc.IdPersona,
+			TePersona: uc.TePersona,
+			Email:     uc.MailPersona,
+		}
 
 		fmt.Println("✅ User created in DB")
 
@@ -63,7 +68,7 @@ func (hs *SecurityService) CreateUserAPI(ctx context.Context, req domain.UserCre
 			Type:       "user.created",
 			RoutingKey: os.Getenv("ROUTINGKEY"),
 			Origin:     os.Getenv("ORIGIN") + os.Getenv("APP_ENVIRONMENT"),
-			Payload:    userCreated, // this is your UserCreated struct
+			Payload:    paylaod, // this is your UserCreated struct
 		}
 
 		// Call repository with tx + event
@@ -330,7 +335,7 @@ func (s *SecurityService) RecuperacionPasswordAPI(ctx context.Context, recuperac
 }
 
 func (s *SecurityService) ProcessOutboxEvents(ctx context.Context) error {
-	fmt.Println("Reading in ProcessOutboxEvents")
+
 	// Leemos hasta 50 eventos para evitar saturar RabbitMQ
 	events, err := s.hr.GetPendingEvents(ctx, 50)
 	if err != nil {

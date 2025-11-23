@@ -16,7 +16,14 @@ type ExternalAPIResponse struct {
 }
 
 type Persona struct {
-	ID int
+	ID                  int
+	Nombre              string
+	ApellidoRazonSocial string
+	PersonaJuridia      string
+	TipoDocPersona      string
+	NroDocPersona       string
+	Email               string
+	TelPersona          string
 }
 
 type PersonaParcial struct {
@@ -36,8 +43,8 @@ type Event struct {
 
 type ConfigPersona struct {
 	IDPersona int
-	Config1   string
-	Config2   string
+	Atribute  string
+	Value     string
 }
 
 type UnidadReserva struct {
@@ -111,4 +118,10 @@ type GetReservaUnidadReserva struct {
 	IDUnidadReserva int
 	FechaDesde      time.Time
 	FechaHasta      time.Time
+}
+
+type PersonCreatedPayload struct {
+	ID        int
+	Email     string
+	TePersona string
 }

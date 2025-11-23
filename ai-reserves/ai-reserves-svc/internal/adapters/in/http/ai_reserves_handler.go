@@ -34,21 +34,22 @@ func newSuccessResponse(c *gin.Context, msg string) {
 	})
 }
 
-func (h *AiReservesHandler) CreatePersona(c *gin.Context) {
-	var req dto.Persona
-	if err := c.BindJSON(&req); err != nil {
-		newErrorResponse(c, err)
-		return
-	}
-	domainReq := domain.Persona(req)
+/*
+	func (h *AiReservesHandler) CreatePersona(c *gin.Context) {
+		var req dto.Persona
+		if err := c.BindJSON(&req); err != nil {
+			newErrorResponse(c, err)
+			return
+		}
+		domainReq := domain.Persona(req)
 
-	if err := h.serv.CreatePersonaAPI(c, domainReq); err != nil {
-		newErrorResponse(c, err)
-		return
+		if err := h.serv.CreatePersonaAPI(c, domainReq); err != nil {
+			newErrorResponse(c, err)
+			return
+		}
+		newSuccessResponse(c, "Persona creada correctamente")
 	}
-	newSuccessResponse(c, "Persona creada correctamente")
-}
-
+*/
 func (h *AiReservesHandler) UpdAtributoPersona(c *gin.Context) {
 	var req dto.PersonaParcial
 	if err := c.BindJSON(&req); err != nil {
@@ -85,6 +86,7 @@ func (h *AiReservesHandler) UpsertConfigPersona(c *gin.Context) {
 		newErrorResponse(c, err)
 		return
 	}
+
 	domainReq := domain.ConfigPersona(req)
 
 	if err := h.serv.UpsertConfigPersonaAPI(c, domainReq); err != nil {

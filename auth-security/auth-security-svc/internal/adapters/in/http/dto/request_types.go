@@ -1,7 +1,6 @@
 package dto
 
 type RequestAltaUser struct {
-	IdPersona    int    `json:"id_persona"`
 	CanalDigital string `json:"canal_digital"`
 	LoginName    string `json:"login_name"`
 	Password     string `json:"password"`

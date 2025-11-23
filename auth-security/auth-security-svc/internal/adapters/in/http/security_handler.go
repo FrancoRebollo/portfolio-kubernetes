@@ -35,7 +35,7 @@ func (hh *SecurityHandler) CreateUser(c *gin.Context) {
 	}
 
 	domainUser := domain.UserCreated{
-		IdPersona:    altaUser.IdPersona,
+		IdPersona:    0,
 		CanalDigital: altaUser.CanalDigital,
 		LoginName:    altaUser.LoginName,
 		Password:     altaUser.Password,
@@ -43,7 +43,7 @@ func (hh *SecurityHandler) CreateUser(c *gin.Context) {
 		TePersona:    altaUser.TePersona,
 	}
 
-	userCreated, err := hh.serv.CreateUserAPI(ctx, domainUser)
+	_, err := hh.serv.CreateUserAPI(ctx, domainUser)
 	if err != nil {
 		/*
 			logger.LoggerError().Error(err)
@@ -53,7 +53,7 @@ func (hh *SecurityHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, userCreated)
+	c.JSON(http.StatusOK, gin.H{"status": "created"})
 }
 
 func (hh *SecurityHandler) CreateCanalDigital(c *gin.Context) {

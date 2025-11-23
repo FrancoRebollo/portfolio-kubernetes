@@ -26,17 +26,37 @@ func NewAiReservesService(hr ports.AiReservesRepository, conf config.App, rmq po
 	}
 }
 
-func (hs *AiReservesService) CreatePersonaAPI(ctx context.Context, req domain.Persona) error {
+func (hs *AiReservesService) CreatePersonaAPI(ctx context.Context, req domain.PersonCreatedPayload) error {
+
+	if err := hs.hr.CreatePersona(ctx, req); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (hs *AiReservesService) UpdAtributoPersonaAPI(ctx context.Context, req domain.PersonaParcial) error {
+
+	if err := hs.hr.UpdAtributoPersona(ctx, req); err != nil {
+		return err
+	}
+
 	return nil
 }
 func (hs *AiReservesService) UpdPersonaAPI(ctx context.Context, req domain.Persona) error {
+
+	if err := hs.hr.UpdPersona(ctx, req); err != nil {
+		return err
+	}
+
 	return nil
 }
 func (hs *AiReservesService) UpsertConfigPersonaAPI(ctx context.Context, req domain.ConfigPersona) error {
+
+	if err := hs.hr.UpsertConfigPersona(ctx, req); err != nil {
+		return err
+	}
+
 	return nil
 }
 

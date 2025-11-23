@@ -7,12 +7,9 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
-	httpin "github.com/FrancoRebollo/auth-security-svc/internal/adapters/in/http"
-	eventin "github.com/FrancoRebollo/auth-security-svc/internal/adapters/in/rabbitmq" // 🧠 nuevo
+	httpin "github.com/FrancoRebollo/auth-security-svc/internal/adapters/in/http" // 🧠 nuevo
 	pg "github.com/FrancoRebollo/auth-security-svc/internal/adapters/out/postgres"
 	"github.com/FrancoRebollo/auth-security-svc/internal/adapters/rabbitmq"
 	"github.com/FrancoRebollo/auth-security-svc/internal/application"
@@ -90,27 +87,27 @@ func main() {
 	// 7️⃣ Iniciar consumer RabbitMQ 🧠 NUEVO BLOQUE
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	/*
+			userConsumer := eventin.NewUserEventConsumer(securityService, rmq)
+			queueName := os.Getenv("USER_CREATED_QUEUE")
+			if queueName == "" {
+				queueName = "user_created_q"
+			}
 
-	userConsumer := eventin.NewUserEventConsumer(securityService, rmq)
-	queueName := os.Getenv("USER_CREATED_QUEUE")
-	if queueName == "" {
-		queueName = "user_created_q"
-	}
+			go userConsumer.Start(ctx, queueName)
+			logger.LoggerInfo().Infof("🎧 Listening RabbitMQ queue: %s", queueName)
 
-	go userConsumer.Start(ctx, queueName)
-	logger.LoggerInfo().Infof("🎧 Listening RabbitMQ queue: %s", queueName)
-
-	// 8️⃣ Señales para cerrar graceful
-	go func() {
-		stop := make(chan os.Signal, 1)
-		signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-		<-stop
-		cancel()
-		rmq.Close()
-		logger.LoggerInfo().Info("🛑 Graceful shutdown consumer")
-		os.Exit(0)
-	}()
-
+		// 8️⃣ Señales para cerrar graceful
+		go func() {
+			stop := make(chan os.Signal, 1)
+			signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+			<-stop
+			cancel()
+			rmq.Close()
+			logger.LoggerInfo().Info("🛑 Graceful shutdown consumer")
+			os.Exit(0)
+		}()
+	*/
 	// 9️⃣ Inicializar Router HTTP
 	rt, err := httpin.NewRouter(cfg.HTTP, versionHandler, *healthcheckHandler, *securityHandler)
 	if err != nil {

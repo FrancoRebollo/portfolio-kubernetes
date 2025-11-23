@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/FrancoRebollo/ai-reserves-svc/internal/domain"
 	"github.com/FrancoRebollo/ai-reserves-svc/internal/platform/logger"
@@ -62,19 +64,281 @@ func (hr *AiReservesRepository) GetDatabasesPing(ctx context.Context) ([]domain.
 	return databases, nil
 }
 
-func (hr *AiReservesRepository) CreatePersona(ctx context.Context, req domain.Persona) error {
+func (hr *AiReservesRepository) CreatePersona(ctx context.Context, req domain.PersonCreatedPayload) error {
+
+	// Primero verificamos si la persona existe
+	var exists bool
+
+	err := hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM ai_res.personas WHERE id = $1)`,
+		req.ID,
+	).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("checking persona existence: %w", err)
+	}
+
+	if !exists {
+		// INSERT si la persona NO existe
+		_, err = hr.dbPost.GetDB().ExecContext(ctx,
+			`INSERT INTO ai_res.personas(id, email, telefono,created_at,created_by,updated_at)
+			 VALUES ($1, $2, $3,CURRENT_TIMESTAMP,'auth_security',null)`,
+			req.ID,
+			req.Email,
+			req.TePersona,
+		)
+		if err != nil {
+			return fmt.Errorf("insert persona: %w", err)
+		}
+
+		fmt.Printf("👤 Persona creada ID=%d\n", req.ID)
+		return nil
+	}
+
+	// UPDATE si ya existe
+	_, err = hr.dbPost.GetDB().ExecContext(ctx,
+		`UPDATE ai_res.personas
+		    SET email = $2,
+		        telefono = $3,
+		        updated_at = CURRENT_TIMESTAMP,
+				updated_by = 'auth_security'
+		  WHERE id = $1`,
+		req.ID,
+		req.Email,
+		req.TePersona,
+	)
+	if err != nil {
+		return fmt.Errorf("update persona: %w", err)
+	}
+
+	fmt.Printf("🔄 Persona actualizada ID=%d\n", req.ID)
 	return nil
 }
 
-func (hr *AiReservesRepository) UpdAtributoPersonaAPI(ctx context.Context, req domain.PersonaParcial) error {
+func (hr *AiReservesRepository) UpdAtributoPersona(ctx context.Context, req domain.PersonaParcial) error {
+
+	// 1) Validar que la persona exista
+	var exists bool
+	err := hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM ai_res.personas WHERE id = $1)`,
+		req.ID,
+	).Scan(&exists)
+
+	if err != nil {
+		return fmt.Errorf("checking persona existence: %w", err)
+	}
+
+	if !exists {
+		return fmt.Errorf("persona with ID=%d does not exist", req.ID)
+	}
+
+	// 2) Lista blanca de columnas permitidas (evita SQL injection)
+	validColumns := map[string]bool{
+		"email":                 true,
+		"telefono":              true,
+		"nombre":                true,
+		"apellido_razon_social": true,
+		"tipo_doc_persona":      true,
+		"nro_doc_persona":       true,
+		"persona_juridica":      true,
+	}
+
+	if !validColumns[req.Atribute] {
+		return fmt.Errorf("invalid attribute '%s' for update", req.Atribute)
+	}
+
+	// 3) Armar el SQL dinámico de forma segura
+	query := fmt.Sprintf(`
+        UPDATE ai_res.personas
+           SET %s = $1,
+               updated_at = CURRENT_TIMESTAMP,
+               updated_by = 'auth_security'
+         WHERE id = $2`, req.Atribute)
+
+	// 4) Ejecutar el update
+	_, err = hr.dbPost.GetDB().ExecContext(ctx, query, req.Value, req.ID)
+	if err != nil {
+		return fmt.Errorf("updating persona %s: %w", req.Atribute, err)
+	}
+
+	fmt.Printf("📝 Persona %d actualizada: %s = %v\n", req.ID, req.Atribute, req.Value)
 	return nil
 }
 
 func (hr *AiReservesRepository) UpdPersona(ctx context.Context, req domain.Persona) error {
+
+	// 1) Validar existencia de la persona
+	var exists bool
+	err := hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM ai_res.personas WHERE id = $1)`,
+		req.ID,
+	).Scan(&exists)
+
+	if err != nil {
+		return fmt.Errorf("checking persona existence: %w", err)
+	}
+
+	if !exists {
+		return fmt.Errorf("persona with ID=%d does not exist", req.ID)
+	}
+
+	// 2) Mapa de columnas válidas (protección anti SQL injection)
+	validFields := map[string]interface{}{
+		"nombre":                req.Nombre,
+		"apellido_razon_social": req.ApellidoRazonSocial,
+		"persona_juridica":      req.PersonaJuridia,
+		"tipo_doc_persona":      req.TipoDocPersona,
+		"nro_doc_persona":       req.NroDocPersona,
+		"email":                 req.Email,
+		"telefono":              req.TelPersona,
+	}
+
+	// 3) Construcción dinámica del UPDATE
+	setClauses := []string{}
+	values := []interface{}{}
+	paramIndex := 1
+
+	for col, val := range validFields {
+		// actualizar solo si el campo viene con valor
+		if v, ok := val.(string); ok && v != "" {
+			setClauses = append(setClauses, fmt.Sprintf("%s = $%d", col, paramIndex))
+			values = append(values, v)
+			paramIndex++
+		}
+	}
+
+	if len(setClauses) == 0 {
+		return fmt.Errorf("no fields provided for update")
+	}
+
+	// agregamos metadata
+	setClauses = append(setClauses,
+		fmt.Sprintf("updated_at = CURRENT_TIMESTAMP"),
+	)
+	// updated_by también
+	setClauses = append(setClauses,
+		fmt.Sprintf("updated_by = 'ai_reserves'"),
+	)
+
+	// 4) Armamos el query final
+	query := fmt.Sprintf(`
+        UPDATE ai_res.personas
+           SET %s
+         WHERE id = $%d`,
+		strings.Join(setClauses, ", "),
+		paramIndex,
+	)
+
+	values = append(values, req.ID)
+
+	// 5) Ejecutar UPDATE
+	_, err = hr.dbPost.GetDB().ExecContext(ctx, query, values...)
+	if err != nil {
+		return fmt.Errorf("updating persona: %w", err)
+	}
+
+	fmt.Printf("📝 Persona %d actualizada con éxito\n", req.ID)
 	return nil
 }
 
 func (hr *AiReservesRepository) UpsertConfigPersona(ctx context.Context, req domain.ConfigPersona) error {
+
+	// --- 1) Validar que exista la persona ---
+	var personaExists bool
+	err := hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM ai_res.personas WHERE id = $1)`,
+		req.IDPersona,
+	).Scan(&personaExists)
+	if err != nil {
+		return fmt.Errorf("checking persona existence: %w", err)
+	}
+	if !personaExists {
+		return fmt.Errorf("persona id=%d does not exist", req.IDPersona)
+	}
+
+	// --- 2) Lista blanca completa de columnas actualizables ---
+	validCols := map[string]string{
+		"notificar_por_mail":     "boolean",
+		"notificar_por_sms":      "boolean",
+		"dias_visibles_adelante": "int",
+		"id_agenda":              "int",
+	}
+
+	// Determinar si la columna es válida
+	colType, ok := validCols[req.Atribute]
+	if !ok {
+		return fmt.Errorf("attribute '%s' cannot be updated", req.Atribute)
+	}
+
+	// --- 3) Convertir valor según tipo ---
+	var castValue interface{}
+
+	switch colType {
+	case "boolean":
+		if req.Value == "true" || req.Value == "1" {
+			castValue = true
+		} else if req.Value == "false" || req.Value == "0" {
+			castValue = false
+		} else {
+			return fmt.Errorf("invalid boolean value '%s'", req.Value)
+		}
+
+	case "int":
+		n, errConv := strconv.Atoi(req.Value)
+		if errConv != nil {
+			return fmt.Errorf("invalid integer value '%s'", req.Value)
+		}
+		castValue = n
+
+	default:
+		return fmt.Errorf("unsupported type '%s' for column '%s'", colType, req.Atribute)
+	}
+
+	// --- 4) Ver si existe config para persona ---
+	var exists bool
+	err = hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM ai_res.conf_agenda_persona WHERE id_persona = $1)`,
+		req.IDPersona,
+	).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("checking config existence: %w", err)
+	}
+
+	// --- 5) INSERT si no existe ---
+	if !exists {
+
+		queryInsert := fmt.Sprintf(`
+            INSERT INTO ai_res.conf_agenda_persona
+                (id_persona, %s, created_by)
+            VALUES ($1, $2, 'auth_security')
+        `, req.Atribute)
+
+		_, err = hr.dbPost.GetDB().ExecContext(ctx, queryInsert, req.IDPersona, castValue)
+		if err != nil {
+			return fmt.Errorf("insert config: %w", err)
+		}
+
+		fmt.Printf("🆕 Config creada para persona %d -> %s = %v\n",
+			req.IDPersona, req.Atribute, castValue)
+		return nil
+	}
+
+	// --- 6) UPDATE dinámico (solo con columnas seguras) ---
+	queryUpdate := fmt.Sprintf(`
+        UPDATE ai_res.conf_agenda_persona
+           SET %s = $1,
+               updated_at = CURRENT_TIMESTAMP,
+               updated_by = 'auth_security'
+         WHERE id_persona = $2
+    `, req.Atribute)
+
+	_, err = hr.dbPost.GetDB().ExecContext(ctx, queryUpdate, castValue, req.IDPersona)
+	if err != nil {
+		return fmt.Errorf("update config: %w", err)
+	}
+
+	fmt.Printf("🔄 Config actualizada para persona %d -> %s = %v\n",
+		req.IDPersona, req.Atribute, castValue)
+
 	return nil
 }
 

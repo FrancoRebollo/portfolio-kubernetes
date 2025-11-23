@@ -8,7 +8,7 @@ import (
 )
 
 type AiReservesService interface {
-	CreatePersonaAPI(ctx context.Context, req domain.Persona) error
+	CreatePersonaAPI(ctx context.Context, req domain.PersonCreatedPayload) error
 	UpdAtributoPersonaAPI(ctx context.Context, req domain.PersonaParcial) error
 	UpdPersonaAPI(ctx context.Context, req domain.Persona) error
 	UpsertConfigPersonaAPI(ctx context.Context, req domain.ConfigPersona) error
@@ -32,8 +32,8 @@ type AiReservesService interface {
 }
 
 type AiReservesRepository interface {
-	CreatePersona(ctx context.Context, req domain.Persona) error
-	UpdAtributoPersonaAPI(ctx context.Context, req domain.PersonaParcial) error
+	CreatePersona(ctx context.Context, req domain.PersonCreatedPayload) error
+	UpdAtributoPersona(ctx context.Context, req domain.PersonaParcial) error
 	UpdPersona(ctx context.Context, req domain.Persona) error
 	UpsertConfigPersona(ctx context.Context, req domain.ConfigPersona) error
 

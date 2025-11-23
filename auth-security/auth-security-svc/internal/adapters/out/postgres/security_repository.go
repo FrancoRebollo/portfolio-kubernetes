@@ -222,20 +222,11 @@ func (v SecurityRepository) checkCredentials(ctx context.Context, credentials do
 }
 
 // CreateUser implements ports.SecurityRepository.
-func (s *SecurityRepository) CreateUser(ctx context.Context, reqAltaUser domain.UserCreated) (*domain.UserCreated, error) {
+func (s *SecurityRepository) CreateUser(ctx context.Context, tx *sql.Tx, reqAltaUser domain.UserCreated) (*domain.UserCreated, error) {
 
 	var message string
 	var idPersona int
-	tx, err := s.dbPost.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
 
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-		}
-	}()
 	query := `SELECT TIPO_CANAL_DIGITAL FROM sec.TIPO_CANAL_DIGITAL_DF WHERE TIPO_CANAL_DIGITAL = $1`
 
 	rows, err := tx.QueryContext(ctx, query, reqAltaUser.CanalDigital)
@@ -249,11 +240,9 @@ func (s *SecurityRepository) CreateUser(ctx context.Context, reqAltaUser domain.
 	}
 	rows.Close()
 
-	query = `SELECT id_persona FROM sec.persona WHERE id_persona = $1`
-
 	err = tx.QueryRowContext(ctx,
-		`SELECT id_persona FROM sec.persona WHERE id_persona = $1`,
-		reqAltaUser.IdPersona, // pass as int, no fmt.Sprint
+		`SELECT id_persona FROM sec.canal_digital_persona WHERE mail_persona = $1 and tipo_canal_digital = $2`,
+		reqAltaUser.MailPersona, reqAltaUser.CanalDigital, // pass as int, no fmt.Sprint
 	).Scan(&idPersona)
 
 	if err != nil {
@@ -296,10 +285,6 @@ func (s *SecurityRepository) CreateUser(ctx context.Context, reqAltaUser domain.
 		}
 
 		message += " en su canal digital"
-	}
-
-	if err = tx.Commit(); err != nil {
-		return nil, err
 	}
 
 	return &domain.UserCreated{
@@ -843,7 +828,7 @@ func (v SecurityRepository) WithTransaction(ctx context.Context, fn func(tx *sql
 	return tx.Commit()
 }
 
-func (v *SecurityRepository) CreateOutboxEvent(ctx context.Context, tx *sql.Tx, evt domain.Event) (domain.Event, error) {
+func (v *SecurityRepository) CreateOutboxEvent(ctx context.Context, tx *sql.Tx, evt domain.Event) (*domain.Event, error) {
 	// 1. Generate event ID (idempotency key)
 	evt.ID = uuid.New().String()
 	evt.Timestamp = time.Now()
@@ -851,7 +836,7 @@ func (v *SecurityRepository) CreateOutboxEvent(ctx context.Context, tx *sql.Tx, 
 	// 2. Marshal payload to JSONB
 	rawPayload, err := json.Marshal(evt.Payload)
 	if err != nil {
-		return domain.Event{}, fmt.Errorf("failed to marshal event payload: %w", err)
+		return &domain.Event{}, fmt.Errorf("failed to marshal event payload: %w", err)
 	}
 
 	// 3. Insert into outbox table
@@ -859,7 +844,7 @@ func (v *SecurityRepository) CreateOutboxEvent(ctx context.Context, tx *sql.Tx, 
         INSERT INTO SEC.outbox_events (
             id, event_type, routing_key, origin, payload_json, created_at, status
         )
-        VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+        VALUES ($1, $2, $3, $4, $5, $6, 'PENDING')
     `
 
 	_, err = tx.ExecContext(
@@ -874,10 +859,10 @@ func (v *SecurityRepository) CreateOutboxEvent(ctx context.Context, tx *sql.Tx, 
 	)
 
 	if err != nil {
-		return domain.Event{}, fmt.Errorf("failed to insert outbox event: %w", err)
+		return &domain.Event{}, fmt.Errorf("failed to insert outbox event: %w", err)
 	}
 
-	return evt, nil
+	return &evt, nil
 }
 
 func (v *SecurityRepository) MarkOutboxAsSent(ctx context.Context, id string) error {

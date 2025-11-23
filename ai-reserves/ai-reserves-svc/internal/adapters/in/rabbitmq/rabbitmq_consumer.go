@@ -44,7 +44,7 @@ func (c *EventConsumer) Start(ctx context.Context, queue string) {
 
 // 🧩 Handler para user.created
 func (c *EventConsumer) handlePersonCreated(ctx context.Context, evt domain.Event) {
-	var payload domain.Persona
+	var payload domain.PersonCreatedPayload
 	data, _ := json.Marshal(evt.Payload)
 	if err := json.Unmarshal(data, &payload); err != nil {
 		fmt.Printf("⚠️ Invalid payload for user.created: %v\n", err)

@@ -67,7 +67,7 @@ func NewRouter(
 
 	ai_res := r.Group("/reserves")
 	{
-		ai_res.Group("/create-person").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.CreatePersona)
+		//ai_res.Group("/create-person").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.CreatePersona)
 		ai_res.Group("/upd-atribute-person").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.UpdAtributoPersona)
 		ai_res.Group("/upd-person").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.UpdPersona)
 

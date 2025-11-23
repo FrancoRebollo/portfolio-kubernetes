@@ -25,7 +25,14 @@ type RequestPushEvent struct {
 }
 
 type Persona struct {
-	ID int
+	ID                  int    `json:"id"`
+	Nombre              string `json:"nombre"`
+	ApellidoRazonSocial string `json:"apellido_razon_social"`
+	PersonaJuridia      string `json:"persona_juridica"`
+	TipoDocPersona      string `json:"tipo_doc_persona"`
+	NroDocPersona       string `json:"nro_doc_persona"`
+	Email               string `json:"email"`
+	TelPersona          string `json:"tel_persona"`
 }
 
 type PersonaParcial struct {
@@ -45,8 +52,8 @@ type Event struct {
 
 type ConfigPersona struct {
 	IDPersona int
-	Config1   string
-	Config2   string
+	Atribute  string
+	Value     string
 }
 
 type UnidadReserva struct {

@@ -24,7 +24,7 @@ type SecurityService interface {
 }
 
 type SecurityRepository interface {
-	CreateUser(ctx context.Context, reqAltaUser domain.UserCreated) (*domain.UserCreated, error)
+	CreateUser(ctx context.Context, tx *sql.Tx, reqAltaUser domain.UserCreated) (*domain.UserCreated, error)
 	CrearCanalDigital(ctx context.Context, crearCanalDigital domain.CanalDigital, apiKey string) error
 	AccessPerson(ctx context.Context, accessPerson domain.AccessPerson, apikey string) error
 	AccessCanalDigital(ctx context.Context, accessCanaldigital domain.AccessCanalDigital, apikey string) error
@@ -40,7 +40,7 @@ type SecurityRepository interface {
 	CheckApiKeyExpirada(ctx context.Context, apiKey string) (bool, error)
 	CambioPasswordByLogin(ctx context.Context, loginName string, newPassword string) error
 	WithTransaction(ctx context.Context, fn func(tx *sql.Tx) error) error
-	CreateOutboxEvent(ctx context.Context, tx *sql.Tx, evt domain.Event) (domain.Event, error)
+	CreateOutboxEvent(ctx context.Context, tx *sql.Tx, evt domain.Event) (*domain.Event, error)
 	MarkOutboxAsFailed(ctx context.Context, id string) error
 	MarkOutboxAsSent(ctx context.Context, id string) error
 	GetPendingEvents(ctx context.Context, limit int) ([]domain.Event, error)

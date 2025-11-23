@@ -99,3 +99,9 @@ type Event struct {
 	Timestamp  time.Time
 	Payload    interface{}
 }
+
+type UserCreatedPayload struct {
+	ID        int
+	Email     string
+	TePersona string
+}

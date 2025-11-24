@@ -17,9 +17,13 @@ type AiReservesService interface {
 	CreateTipoUnidadReservaAPI(ctx context.Context, req domain.TipoUnidadReserva) error
 	CreateSubTipoUnidadReservaAPI(ctx context.Context, req domain.SubTipoUnidadReserva) error
 
-	ModifUnidadReservaAPI(ctx context.Context, req domain.UnidadReserva) error
-	ModifTipoUnidadReservaAPI(ctx context.Context, req domain.TipoUnidadReserva) error
-	ModifSubTipoUnidadReservaAPI(ctx context.Context, req domain.SubTipoUnidadReserva) error
+	ModifUnidadReservaAPI(ctx context.Context, req domain.UpdUnidadReserva) error
+	UpdAtributeUnidadReservaAPI(ctx context.Context, req domain.UpdAtributeUnidadReserva) error
+
+	ModifTipoUnidadReservaAPI(ctx context.Context, req domain.UpdTipoUnidadReserva) error
+	ModifSubTipoUnidadReservaAPI(ctx context.Context, req domain.UpdSubTipoUnidadReserva) error
+	UpdAtributeTipoUnidadReservaAPI(ctx context.Context, req domain.UpdAtributeTipoUnidadReserva) error
+	UpdAtributeSubTipoUnidadReservaAPI(ctx context.Context, req domain.UpdAtributeSubTipoUnidadReserva) error
 
 	CreateReserveAPI(ctx context.Context, req domain.Reserva) error
 	CancelReserveAPI(ctx context.Context, idReserva int) error
@@ -41,9 +45,13 @@ type AiReservesRepository interface {
 	CreateTipoUnidadReserva(ctx context.Context, req domain.TipoUnidadReserva) (int, error)
 	CreateSubTipoUnidadReserva(ctx context.Context, req domain.SubTipoUnidadReserva) (int, error)
 
-	ModifUnidadReserva(ctx context.Context, req domain.UnidadReserva) error
-	ModifTipoUnidadReserva(ctx context.Context, req domain.TipoUnidadReserva) error
-	ModifSubTipoUnidadReserva(ctx context.Context, req domain.SubTipoUnidadReserva) error
+	ModifUnidadReserva(ctx context.Context, req domain.UpdUnidadReserva) error
+	UpdAtributeUnidadReserva(ctx context.Context, req domain.UpdAtributeUnidadReserva) error
+
+	ModifTipoUnidadReserva(ctx context.Context, req domain.UpdTipoUnidadReserva) error
+	UpdAtributeTipoUnidadReserva(ctx context.Context, req domain.UpdAtributeTipoUnidadReserva) error
+	ModifSubTipoUnidadReserva(ctx context.Context, req domain.UpdSubTipoUnidadReserva) error
+	UpdAtributeSubTipoUnidadReserva(ctx context.Context, req domain.UpdAtributeSubTipoUnidadReserva) error
 
 	CreateReserve(ctx context.Context, req domain.Reserva) error
 	CancelReserve(ctx context.Context, idReserva int) error

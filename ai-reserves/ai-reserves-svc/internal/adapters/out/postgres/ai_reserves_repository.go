@@ -600,15 +600,107 @@ func (hr *AiReservesRepository) CreateSubTipoUnidadReserva(
 	return newID, nil
 }
 
-func (hr *AiReservesRepository) ModifUnidadReserva(ctx context.Context, req domain.UnidadReserva) error {
+func (hr *AiReservesRepository) ModifUnidadReserva(ctx context.Context, req domain.UpdUnidadReserva) error {
+
+	// 1) Verificar que exista
+	var exists bool
+	err := hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM ai_res.unidad_reserva WHERE id = $1)`,
+		req.IDUnidadReserva,
+	).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("checking unidad_reserva existence: %w", err)
+	}
+
+	if !exists {
+		return fmt.Errorf("unidad_reserva con id %d no existe", req.IDUnidadReserva)
+	}
+
+	// 2) Ejecutar actualización
+	_, err = hr.dbPost.GetDB().ExecContext(ctx,
+		`UPDATE ai_res.unidad_reserva
+		   SET nombre = $2,
+		       descripcion = $3,
+		       updated_at = CURRENT_TIMESTAMP,
+		       updated_by = 'ai_reserves'
+		 WHERE id = $1`,
+		req.IDUnidadReserva,
+		req.Nombre,
+		req.Descripcion,
+	)
+
+	if err != nil {
+		return fmt.Errorf("update unidad_reserva: %w", err)
+	}
+
+	fmt.Printf("🔄 UnidadReserva actualizada ID=%d\n", req.IDUnidadReserva)
 	return nil
 }
 
-func (hr *AiReservesRepository) ModifTipoUnidadReserva(ctx context.Context, req domain.TipoUnidadReserva) error {
+func (hr *AiReservesRepository) UpdAtributeUnidadReserva(ctx context.Context, req domain.UpdAtributeUnidadReserva) error {
+
+	// Lista blanca de campos permitidos
+	validFields := map[string]bool{
+		"nombre":      true,
+		"descripcion": true,
+	}
+
+	// Validar SQL Injection: el campo debe existir en la whitelist
+	if !validFields[strings.ToLower(req.Atribute)] {
+		return fmt.Errorf("atributo inválido: %s", req.Atribute)
+	}
+
+	// 1) Verificar que exista
+	var exists bool
+	err := hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM ai_res.unidad_reserva WHERE id = $1)`,
+		req.IDUnidadReserva,
+	).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("checking unidad_reserva existence: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("unidad_reserva id=%d no existe", req.IDUnidadReserva)
+	}
+
+	// 2) Construir query dinámica SEGURA
+	query := fmt.Sprintf(`
+		UPDATE ai_res.unidad_reserva
+		   SET %s = $2,
+		       updated_at = CURRENT_TIMESTAMP,
+		       updated_by = 'system-api'
+		 WHERE id = $1`,
+		req.Atribute, // seguro porque está validado
+	)
+
+	// 3) Ejecutar update
+	_, err = hr.dbPost.GetDB().ExecContext(ctx, query,
+		req.IDUnidadReserva,
+		req.Value,
+	)
+	if err != nil {
+		return fmt.Errorf("update atributo unidad_reserva: %w", err)
+	}
+
+	fmt.Printf("🔄 UnidadReserva atributo %s actualizado para ID=%d\n",
+		req.Atribute, req.IDUnidadReserva,
+	)
 	return nil
 }
 
-func (hr *AiReservesRepository) ModifSubTipoUnidadReserva(ctx context.Context, req domain.SubTipoUnidadReserva) error {
+func (hr *AiReservesRepository) ModifTipoUnidadReserva(ctx context.Context, req domain.UpdTipoUnidadReserva) error {
+	return nil
+}
+
+func (hr *AiReservesRepository) UpdAtributeTipoUnidadReserva(ctx context.Context, req domain.UpdAtributeTipoUnidadReserva) error {
+	return nil
+}
+
+func (hr *AiReservesRepository) ModifSubTipoUnidadReserva(ctx context.Context, req domain.UpdSubTipoUnidadReserva) error {
+	return nil
+}
+
+func (hr *AiReservesRepository) UpdAtributeSubTipoUnidadReserva(ctx context.Context, req domain.UpdAtributeSubTipoUnidadReserva) error {
 	return nil
 }
 

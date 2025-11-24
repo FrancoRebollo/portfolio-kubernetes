@@ -80,6 +80,11 @@ func NewRouter(
 		ai_res.Group("/upd-tipo-unidad-reserva").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.ModifTipoUnidadReserva)
 
 		ai_res.Group("/upd-sub-tipo-unidad-reserva").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.ModifSubTipoUnidadReserva)
+		ai_res.Group("/upd-atribute-unidad-reserva").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.ModifUnidadReservaParcial)
+		ai_res.Group("/upd-atribute-tipo-unidad-reserva").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.ModifTipoUnidadReservaParcial)
+		ai_res.Group("/upd-atribute-sub-tipo-unidad-reserva").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.ModifSubTipoUnidadReservaParcial)
+
+		//
 		ai_res.Group("/create-reserve").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.CreateReserve)
 		ai_res.Group("/cancel-reserve").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.CancelReserve)
 

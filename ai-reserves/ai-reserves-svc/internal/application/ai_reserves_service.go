@@ -85,7 +85,7 @@ func (hs *AiReservesService) CreateSubTipoUnidadReservaAPI(ctx context.Context, 
 	return nil
 }
 
-func (hs *AiReservesService) ModifUnidadReservaAPI(ctx context.Context, req domain.UnidadReserva) error {
+func (hs *AiReservesService) ModifUnidadReservaAPI(ctx context.Context, req domain.UpdUnidadReserva) error {
 
 	if err := hs.hr.ModifUnidadReserva(ctx, req); err != nil {
 		return err
@@ -93,7 +93,17 @@ func (hs *AiReservesService) ModifUnidadReservaAPI(ctx context.Context, req doma
 
 	return nil
 }
-func (hs *AiReservesService) ModifTipoUnidadReservaAPI(ctx context.Context, req domain.TipoUnidadReserva) error {
+
+func (hs *AiReservesService) UpdAtributeUnidadReservaAPI(ctx context.Context, req domain.UpdAtributeUnidadReserva) error {
+
+	if err := hs.hr.UpdAtributeUnidadReserva(ctx, req); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (hs *AiReservesService) ModifTipoUnidadReservaAPI(ctx context.Context, req domain.UpdTipoUnidadReserva) error {
 
 	if err := hs.hr.ModifTipoUnidadReserva(ctx, req); err != nil {
 		return err
@@ -101,9 +111,26 @@ func (hs *AiReservesService) ModifTipoUnidadReservaAPI(ctx context.Context, req 
 
 	return nil
 }
-func (hs *AiReservesService) ModifSubTipoUnidadReservaAPI(ctx context.Context, req domain.SubTipoUnidadReserva) error {
+func (hs *AiReservesService) ModifSubTipoUnidadReservaAPI(ctx context.Context, req domain.UpdSubTipoUnidadReserva) error {
 
 	if err := hs.hr.ModifSubTipoUnidadReserva(ctx, req); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (hs *AiReservesService) UpdAtributeTipoUnidadReservaAPI(ctx context.Context, req domain.UpdAtributeTipoUnidadReserva) error {
+
+	if err := hs.hr.UpdAtributeTipoUnidadReserva(ctx, req); err != nil {
+		return err
+	}
+
+	return nil
+}
+func (hs *AiReservesService) UpdAtributeSubTipoUnidadReservaAPI(ctx context.Context, req domain.UpdAtributeSubTipoUnidadReserva) error {
+
+	if err := hs.hr.UpdAtributeSubTipoUnidadReserva(ctx, req); err != nil {
 		return err
 	}
 

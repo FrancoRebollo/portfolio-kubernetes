@@ -62,6 +62,18 @@ type UnidadReserva struct {
 	Descripcion     string `json:"descripcion"`
 }
 
+type UpdAtributeUnidadReserva struct {
+	IDUnidadReserva int
+	Atribute        string `json:"atribute"`
+	Value           string `json:"value"`
+}
+
+type UpdUnidadReserva struct {
+	IDUnidadReserva int    `json:"id_unidad_reserva"`
+	Nombre          string `json:"nombre"`
+	Descripcion     string `json:"descripcion"`
+}
+
 type TipoUnidadReserva struct {
 	IDUnidadReserva     int `json:"id_unidad_reserva"`
 	IDTipoUnidadReserva int
@@ -136,4 +148,34 @@ type GetReservaUnidadReserva struct {
 	IDUnidadReserva int
 	FechaDesde      time.Time
 	FechaHasta      time.Time
+}
+
+type UpdAtributeTipoUnidadReserva struct {
+	IDUnidadReserva     int
+	IDTipoUnidadReserva int
+	Atribute            string
+	Value               string
+}
+
+type UpdAtributeSubTipoUnidadReserva struct {
+	IDUnidadReserva        int
+	IDTipoUnidadReserva    int
+	IDSubTipoUnidadReserva int
+	Atribute               string
+	Value                  string
+}
+
+type UpdTipoUnidadReserva struct {
+	IDUnidadReserva     int
+	IDTipoUnidadReserva int
+	Nombre              string
+	Descripcion         string
+}
+
+type UpdSubTipoUnidadReserva struct {
+	IDUnidadReserva        int
+	IDTipoUnidadReserva    int
+	IDSubTipoUnidadReserva int
+	Nombre                 string
+	Descripcion            string
 }

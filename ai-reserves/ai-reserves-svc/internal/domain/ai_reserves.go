@@ -71,24 +71,6 @@ type SubTipoUnidadReserva struct {
 	Descripcion            string
 }
 
-type UnidadReservaModif struct {
-	IDUnidadReserva int
-	Atribute        string
-	Value           string
-}
-
-type TipoUnidadReservaModif struct {
-	IDUnidadReserva int
-	Atribute        string
-	Value           string
-}
-
-type SubTipoUnidadReservaModif struct {
-	IDUnidadReserva int
-	Atribute        string
-	Value           string
-}
-
 type Reserva struct {
 	IDUReserva      int
 	IDPersona       int
@@ -133,4 +115,46 @@ type PersonCreatedPayload struct {
 	ID        int
 	Email     string
 	TePersona string
+}
+
+type UpdAtributeUnidadReserva struct {
+	IDUnidadReserva int
+	Atribute        string
+	Value           string
+}
+
+type UpdUnidadReserva struct {
+	IDUnidadReserva int
+	Nombre          string
+	Descripcion     string
+}
+
+type UpdAtributeTipoUnidadReserva struct {
+	IDUnidadReserva     int
+	IDTipoUnidadReserva int
+	Atribute            string
+	Value               string
+}
+
+type UpdAtributeSubTipoUnidadReserva struct {
+	IDUnidadReserva        int
+	IDTipoUnidadReserva    int
+	IDSubTipoUnidadReserva int
+	Atribute               string
+	Value                  string
+}
+
+type UpdTipoUnidadReserva struct {
+	IDUnidadReserva     int
+	IDTipoUnidadReserva int
+	Nombre              string
+	Descripcion         string
+}
+
+type UpdSubTipoUnidadReserva struct {
+	IDUnidadReserva        int
+	IDTipoUnidadReserva    int
+	IDSubTipoUnidadReserva int
+	Nombre                 string
+	Descripcion            string
 }

@@ -142,12 +142,12 @@ func (h *AiReservesHandler) CreateSubTipoUnidadReserva(c *gin.Context) {
 }
 
 func (h *AiReservesHandler) ModifUnidadReserva(c *gin.Context) {
-	var req dto.UnidadReserva
+	var req dto.UpdUnidadReserva
 	if err := c.BindJSON(&req); err != nil {
 		newErrorResponse(c, err)
 		return
 	}
-	domainReq := domain.UnidadReserva(req)
+	domainReq := domain.UpdUnidadReserva(req)
 
 	if err := h.serv.ModifUnidadReservaAPI(c, domainReq); err != nil {
 		newErrorResponse(c, err)
@@ -156,13 +156,28 @@ func (h *AiReservesHandler) ModifUnidadReserva(c *gin.Context) {
 	newSuccessResponse(c, "Unidad reserva modificada")
 }
 
-func (h *AiReservesHandler) ModifTipoUnidadReserva(c *gin.Context) {
-	var req dto.TipoUnidadReserva
+func (h *AiReservesHandler) ModifUnidadReservaParcial(c *gin.Context) {
+	var req dto.UpdAtributeUnidadReserva
 	if err := c.BindJSON(&req); err != nil {
 		newErrorResponse(c, err)
 		return
 	}
-	domainReq := domain.TipoUnidadReserva(req)
+	domainReq := domain.UpdAtributeUnidadReserva(req)
+
+	if err := h.serv.UpdAtributeUnidadReservaAPI(c, domainReq); err != nil {
+		newErrorResponse(c, err)
+		return
+	}
+	newSuccessResponse(c, "Unidad reserva modificada")
+}
+
+func (h *AiReservesHandler) ModifTipoUnidadReserva(c *gin.Context) {
+	var req dto.UpdTipoUnidadReserva
+	if err := c.BindJSON(&req); err != nil {
+		newErrorResponse(c, err)
+		return
+	}
+	domainReq := domain.UpdTipoUnidadReserva(req)
 
 	if err := h.serv.ModifTipoUnidadReservaAPI(c, domainReq); err != nil {
 		newErrorResponse(c, err)
@@ -171,19 +186,49 @@ func (h *AiReservesHandler) ModifTipoUnidadReserva(c *gin.Context) {
 	newSuccessResponse(c, "Tipo unidad modificado")
 }
 
-func (h *AiReservesHandler) ModifSubTipoUnidadReserva(c *gin.Context) {
-	var req dto.SubTipoUnidadReserva
+func (h *AiReservesHandler) ModifTipoUnidadReservaParcial(c *gin.Context) {
+	var req dto.UpdAtributeTipoUnidadReserva
 	if err := c.BindJSON(&req); err != nil {
 		newErrorResponse(c, err)
 		return
 	}
-	domainReq := domain.SubTipoUnidadReserva(req)
+	domainReq := domain.UpdAtributeTipoUnidadReserva(req)
+
+	if err := h.serv.UpdAtributeTipoUnidadReservaAPI(c, domainReq); err != nil {
+		newErrorResponse(c, err)
+		return
+	}
+	newSuccessResponse(c, "Unidad reserva modificada")
+}
+
+func (h *AiReservesHandler) ModifSubTipoUnidadReserva(c *gin.Context) {
+	var req dto.UpdSubTipoUnidadReserva
+	if err := c.BindJSON(&req); err != nil {
+		newErrorResponse(c, err)
+		return
+	}
+	domainReq := domain.UpdSubTipoUnidadReserva(req)
 
 	if err := h.serv.ModifSubTipoUnidadReservaAPI(c, domainReq); err != nil {
 		newErrorResponse(c, err)
 		return
 	}
 	newSuccessResponse(c, "Subtipo unidad modificado")
+}
+
+func (h *AiReservesHandler) ModifSubTipoUnidadReservaParcial(c *gin.Context) {
+	var req dto.UpdAtributeSubTipoUnidadReserva
+	if err := c.BindJSON(&req); err != nil {
+		newErrorResponse(c, err)
+		return
+	}
+	domainReq := domain.UpdAtributeSubTipoUnidadReserva(req)
+
+	if err := h.serv.UpdAtributeSubTipoUnidadReservaAPI(c, domainReq); err != nil {
+		newErrorResponse(c, err)
+		return
+	}
+	newSuccessResponse(c, "Unidad reserva modificada")
 }
 
 func (h *AiReservesHandler) CreateReserve(c *gin.Context) {

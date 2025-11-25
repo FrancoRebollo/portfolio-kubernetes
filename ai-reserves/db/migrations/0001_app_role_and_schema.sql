@@ -107,8 +107,9 @@ CREATE TABLE ai_res.reservas (
     fecha DATE NOT NULL,
     hora_inicio TIME NOT NULL,
     hora_fin TIME NOT NULL,
+    id_sub_tipo_unidad_reserva INT NOT NULL REFERENCES ai_res.sub_tipo_unidad_reserva(id)
     id_paciente INT REFERENCES ai_res.personas(id),
-    estado VARCHAR(50) DEFAULT 'pendiente', -- pendiente / confirmada / cancelada / finalizada
+    estado VARCHAR(50) DEFAULT 'PENDIENTE', -- pendiente / confirmada / cancelada / finalizada
     observaciones TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

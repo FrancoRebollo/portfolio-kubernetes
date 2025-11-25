@@ -326,18 +326,20 @@ func (h *AiReservesHandler) GetReservasPersona(c *gin.Context) {
 
 func (h *AiReservesHandler) GetReservasUnidadReserva(c *gin.Context) {
 	var req dto.GetReservaUnidadReserva
-	if err := c.BindJSON(&req); err != nil {
+	if err := c.BindQuery(&req); err != nil {
 		newErrorResponse(c, err)
 		return
 	}
 
 	domainReq := domain.GetReservaUnidadReserva(req)
 
-	if err := h.serv.GetReservasUnidadReservaAPI(c, domainReq); err != nil {
+	reservas, err := h.serv.GetReservasUnidadReservaAPI(c, domainReq)
+	if err != nil {
 		newErrorResponse(c, err)
 		return
 	}
-	newSuccessResponse(c, "Reservas obtenidas por unidad")
+
+	c.JSON(200, reservas)
 }
 
 /*

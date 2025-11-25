@@ -111,12 +111,15 @@ type SubTipoUnidadReservaModif struct {
 }
 
 type Reserva struct {
-	IDUReserva      int
-	IDPersona       int
-	IDUnidadReserva int
-	FechaInicio     time.Time
-	FechaFin        time.Time
-	Estado          string
+	ID                     int
+	IDAgenda               int
+	Fecha                  time.Time
+	HoraInicio             string
+	HoraFin                string
+	IDPaciente             *int
+	Estado                 string
+	Observaciones          *string
+	IDSubTipoUnidadReserva int
 }
 
 type ReservaCancel struct {
@@ -145,9 +148,9 @@ type GetReservaPersona struct {
 }
 
 type GetReservaUnidadReserva struct {
-	IDUnidadReserva int
-	FechaDesde      time.Time
-	FechaHasta      time.Time
+	IDSubTipoUnidadReserva int
+	FechaDesde             time.Time
+	FechaHasta             time.Time
 }
 
 type UpdAtributeTipoUnidadReserva struct {

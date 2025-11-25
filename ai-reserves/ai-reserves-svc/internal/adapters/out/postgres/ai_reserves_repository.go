@@ -689,18 +689,301 @@ func (hr *AiReservesRepository) UpdAtributeUnidadReserva(ctx context.Context, re
 }
 
 func (hr *AiReservesRepository) ModifTipoUnidadReserva(ctx context.Context, req domain.UpdTipoUnidadReserva) error {
+
+	db := hr.dbPost.GetDB()
+
+	// 1️⃣ Validar que exista la unidad_reserva
+	var existsUnidad bool
+	err := db.QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM ai_res.unidad_reserva WHERE id = $1)`,
+		req.IDUnidadReserva,
+	).Scan(&existsUnidad)
+
+	if err != nil {
+		return fmt.Errorf("validating unidad_reserva: %w", err)
+	}
+
+	if !existsUnidad {
+		return fmt.Errorf("unidad_reserva id %d no existe", req.IDUnidadReserva)
+	}
+
+	// 2️⃣ Validar que exista el tipo_unidad_reserva y que pertenezca a la unidad
+	var match bool
+	err = db.QueryRowContext(ctx,
+		`SELECT EXISTS(
+			SELECT 1 
+			FROM ai_res.tipo_unidad_reserva 
+			WHERE id = $1 AND id_unidad_reserva = $2
+		)`,
+		req.IDTipoUnidadReserva,
+		req.IDUnidadReserva,
+	).Scan(&match)
+
+	if err != nil {
+		return fmt.Errorf("validating tipo_unidad_reserva: %w", err)
+	}
+
+	if !match {
+		return fmt.Errorf(
+			"tipo_unidad_reserva id %d no pertenece a unidad_reserva id %d",
+			req.IDTipoUnidadReserva, req.IDUnidadReserva,
+		)
+	}
+
+	// 3️⃣ Actualizar los campos permitidos
+	_, err = db.ExecContext(ctx,
+		`UPDATE ai_res.tipo_unidad_reserva
+		 SET nombre = $3,
+		     descripcion = $4,
+		     updated_at = CURRENT_TIMESTAMP,
+		     updated_by = 'system'
+	   WHERE id = $1 AND id_unidad_reserva = $2`,
+		req.IDTipoUnidadReserva,
+		req.IDUnidadReserva,
+		req.Nombre,
+		req.Descripcion,
+	)
+
+	if err != nil {
+		return fmt.Errorf("update tipo_unidad_reserva: %w", err)
+	}
+
 	return nil
 }
 
 func (hr *AiReservesRepository) UpdAtributeTipoUnidadReserva(ctx context.Context, req domain.UpdAtributeTipoUnidadReserva) error {
+
+	db := hr.dbPost.GetDB()
+
+	var validTipoUnidadReservaFields = map[string]bool{
+		"nombre":      true,
+		"descripcion": true,
+	}
+
+	// 1️⃣ Verificar columna válida
+	if !validTipoUnidadReservaFields[req.Atribute] {
+		return fmt.Errorf("atributo '%s' no es válido para tipo_unidad_reserva", req.Atribute)
+	}
+
+	// 2️⃣ Validar relación unidad_reserva–tipo_unidad_reserva
+	var match bool
+	err := db.QueryRowContext(ctx,
+		`SELECT EXISTS(
+			SELECT 1 
+			FROM ai_res.tipo_unidad_reserva 
+			WHERE id = $1 AND id_unidad_reserva = $2
+		)`,
+		req.IDTipoUnidadReserva,
+		req.IDUnidadReserva,
+	).Scan(&match)
+
+	if err != nil {
+		return fmt.Errorf("validating tipo_unidad_reserva: %w", err)
+	}
+
+	if !match {
+		return fmt.Errorf(
+			"tipo_unidad_reserva id %d no pertenece a unidad_reserva id %d",
+			req.IDTipoUnidadReserva, req.IDUnidadReserva,
+		)
+	}
+
+	// 3️⃣ Construir SQL dinámico SEGURO
+	query := fmt.Sprintf(`
+		UPDATE ai_res.tipo_unidad_reserva
+		   SET %s = $3,
+		       updated_at = CURRENT_TIMESTAMP,
+		       updated_by = 'system'
+		 WHERE id = $1 AND id_unidad_reserva = $2
+	`, req.Atribute)
+
+	_, err = db.ExecContext(ctx, query,
+		req.IDTipoUnidadReserva,
+		req.IDUnidadReserva,
+		req.Value,
+	)
+
+	if err != nil {
+		return fmt.Errorf("update dynamic tipo_unidad_reserva: %w", err)
+	}
+
 	return nil
 }
 
 func (hr *AiReservesRepository) ModifSubTipoUnidadReserva(ctx context.Context, req domain.UpdSubTipoUnidadReserva) error {
+
+	db := hr.dbPost.GetDB()
+
+	// 1️⃣ Validar unidad_reserva
+	var existsUnidad bool
+	err := db.QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM ai_res.unidad_reserva WHERE id = $1)`,
+		req.IDUnidadReserva,
+	).Scan(&existsUnidad)
+	if err != nil {
+		return fmt.Errorf("validating unidad_reserva: %w", err)
+	}
+	if !existsUnidad {
+		return fmt.Errorf("unidad_reserva id %d no existe", req.IDUnidadReserva)
+	}
+
+	// 2️⃣ Validar tipo_unidad_reserva pertenece a la unidad
+	var matchTipo bool
+	err = db.QueryRowContext(ctx,
+		`SELECT EXISTS(
+			SELECT 1 
+			  FROM ai_res.tipo_unidad_reserva 
+			 WHERE id = $1 AND id_unidad_reserva = $2
+		)`,
+		req.IDTipoUnidadReserva,
+		req.IDUnidadReserva,
+	).Scan(&matchTipo)
+	if err != nil {
+		return fmt.Errorf("validating tipo_unidad_reserva: %w", err)
+	}
+	if !matchTipo {
+		return fmt.Errorf(
+			"tipo_unidad_reserva %d no pertenece a unidad_reserva %d",
+			req.IDTipoUnidadReserva, req.IDUnidadReserva,
+		)
+	}
+
+	// 3️⃣ Validar sub_tipo pertenece al tipo
+	var matchSubTipo bool
+	err = db.QueryRowContext(ctx,
+		`SELECT EXISTS(
+			SELECT 1
+			  FROM ai_res.sub_tipo_unidad_reserva
+			 WHERE id = $1 
+			   AND id_tipo_unidad_reserva = $2
+		)`,
+		req.IDSubTipoUnidadReserva,
+		req.IDTipoUnidadReserva,
+	).Scan(&matchSubTipo)
+	if err != nil {
+		return fmt.Errorf("validating sub_tipo_unidad_reserva: %w", err)
+	}
+	if !matchSubTipo {
+		return fmt.Errorf(
+			"sub_tipo_unidad_reserva %d no pertenece al tipo_unidad_reserva %d",
+			req.IDSubTipoUnidadReserva, req.IDTipoUnidadReserva,
+		)
+	}
+
+	// 4️⃣ UPDATE
+	_, err = db.ExecContext(ctx,
+		`UPDATE ai_res.sub_tipo_unidad_reserva
+			SET nombre = $3,
+				descripcion = $4,
+				updated_at = CURRENT_TIMESTAMP,
+				updated_by = 'system'
+		  WHERE id = $1 
+		    AND id_tipo_unidad_reserva = $2`,
+		req.IDSubTipoUnidadReserva,
+		req.IDTipoUnidadReserva,
+		req.Nombre,
+		req.Descripcion,
+	)
+
+	if err != nil {
+		return fmt.Errorf("update sub_tipo_unidad_reserva: %w", err)
+	}
+
 	return nil
 }
 
 func (hr *AiReservesRepository) UpdAtributeSubTipoUnidadReserva(ctx context.Context, req domain.UpdAtributeSubTipoUnidadReserva) error {
+
+	db := hr.dbPost.GetDB()
+
+	var validSubTipoFields = map[string]bool{
+		"nombre":                   true,
+		"descripcion":              true,
+		"duracion_reserva_minutos": true,
+	}
+
+	// 1️⃣ Validar atributo permitido
+	if !validSubTipoFields[req.Atribute] {
+		return fmt.Errorf("atributo '%s' no es válido para sub_tipo_unidad_reserva", req.Atribute)
+	}
+
+	// 2️⃣ Validar unidad_reserva
+	var existsUnidad bool
+	err := db.QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM ai_res.unidad_reserva WHERE id = $1)`,
+		req.IDUnidadReserva,
+	).Scan(&existsUnidad)
+	if err != nil {
+		return fmt.Errorf("validating unidad_reserva: %w", err)
+	}
+	if !existsUnidad {
+		return fmt.Errorf("unidad_reserva id %d no existe", req.IDUnidadReserva)
+	}
+
+	// 3️⃣ Validar tipo_unidad_reserva pertenece a unidad
+	var matchTipo bool
+	err = db.QueryRowContext(ctx,
+		`SELECT EXISTS(
+			SELECT 1 
+			  FROM ai_res.tipo_unidad_reserva 
+			 WHERE id = $1 AND id_unidad_reserva = $2
+		)`,
+		req.IDTipoUnidadReserva,
+		req.IDUnidadReserva,
+	).Scan(&matchTipo)
+	if err != nil {
+		return fmt.Errorf("validating tipo_unidad_reserva: %w", err)
+	}
+	if !matchTipo {
+		return fmt.Errorf(
+			"tipo_unidad_reserva %d no pertenece a unidad_reserva %d",
+			req.IDTipoUnidadReserva, req.IDUnidadReserva,
+		)
+	}
+
+	// 4️⃣ Validar sub_tipo pertenece al tipo
+	var matchSubTipo bool
+	err = db.QueryRowContext(ctx,
+		`SELECT EXISTS(
+			SELECT 1
+			  FROM ai_res.sub_tipo_unidad_reserva
+			 WHERE id = $1 
+			   AND id_tipo_unidad_reserva = $2
+		)`,
+		req.IDSubTipoUnidadReserva,
+		req.IDTipoUnidadReserva,
+	).Scan(&matchSubTipo)
+	if err != nil {
+		return fmt.Errorf("validating sub_tipo_unidad_reserva: %w", err)
+	}
+	if !matchSubTipo {
+		return fmt.Errorf(
+			"sub_tipo_unidad_reserva %d no pertenece al tipo_unidad_reserva %d",
+			req.IDSubTipoUnidadReserva, req.IDTipoUnidadReserva,
+		)
+	}
+
+	// 5️⃣ Construcción del UPDATE dinámico (SEGURO)
+	query := fmt.Sprintf(`
+		UPDATE ai_res.sub_tipo_unidad_reserva
+		   SET %s = $3,
+		       updated_at = CURRENT_TIMESTAMP,
+		       updated_by = 'system'
+		 WHERE id = $1
+		   AND id_tipo_unidad_reserva = $2
+	`, req.Atribute)
+
+	_, err = db.ExecContext(ctx,
+		query,
+		req.IDSubTipoUnidadReserva,
+		req.IDTipoUnidadReserva,
+		req.Value,
+	)
+
+	if err != nil {
+		return fmt.Errorf("update dynamic sub_tipo_unidad_reserva: %w", err)
+	}
+
 	return nil
 }
 
@@ -728,8 +1011,89 @@ func (hr *AiReservesRepository) GetReservasPersona(ctx context.Context, req doma
 	return nil
 }
 
-func (hr *AiReservesRepository) GetReservasUnidadReserva(ctx context.Context, req domain.GetReservaUnidadReserva) error {
-	return nil
+func (hr *AiReservesRepository) GetReservasUnidadReserva(
+	ctx context.Context,
+	req domain.GetReservaUnidadReserva,
+) ([]domain.Reserva, error) {
+
+	db := hr.dbPost.GetDB()
+
+	// 1️⃣ Validar que el sub_tipo exista (buenas prácticas)
+	var exists bool
+	err := db.QueryRowContext(ctx,
+		`SELECT EXISTS(
+			SELECT 1 
+			  FROM ai_res.sub_tipo_unidad_reserva
+			 WHERE id = $1
+		)`,
+		req.IDSubTipoUnidadReserva,
+	).Scan(&exists)
+
+	if err != nil {
+		return nil, fmt.Errorf("validating sub_tipo_unidad_reserva: %w", err)
+	}
+
+	if !exists {
+		return nil, fmt.Errorf("sub_tipo_unidad_reserva %d no existe", req.IDSubTipoUnidadReserva)
+	}
+
+	// 2️⃣ Query principal
+	rows, err := db.QueryContext(ctx,
+		`SELECT 
+			id,
+			id_agenda,
+			fecha,
+			hora_inicio,
+			hora_fin,
+			id_paciente,
+			estado,
+			observaciones,
+			id_sub_tipo_unidad_reserva
+		 FROM ai_res.reservas
+		 WHERE id_sub_tipo_unidad_reserva = $1
+		   AND estado IN ('PENDIENTE', 'CONFIRMADA')
+		   AND (fecha > CURRENT_DATE
+		        OR (fecha = CURRENT_DATE AND hora_fin > CURRENT_TIME))
+		 ORDER BY fecha, hora_inicio`,
+		req.IDSubTipoUnidadReserva,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("query reservas: %w", err)
+	}
+	defer rows.Close()
+
+	// 3️⃣ Mapear filas
+	var reservas []domain.Reserva
+
+	for rows.Next() {
+		var r domain.Reserva
+
+		err := rows.Scan(
+			&r.ID,
+			&r.IDAgenda,
+			&r.Fecha,
+			&r.HoraInicio,
+			&r.HoraFin,
+			&r.IDPaciente,
+			&r.Estado,
+			&r.Observaciones,
+			&r.IDSubTipoUnidadReserva,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("scan reservas: %w", err)
+		}
+
+		reservas = append(reservas, r)
+	}
+
+	// 4️⃣ Manejar error de iteración
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating reservas: %w", err)
+	}
+
+	return reservas, nil
 }
 
 func (hr *AiReservesRepository) PushEventToQueue(ctx context.Context, tx *sql.Tx, event domain.Event) error {

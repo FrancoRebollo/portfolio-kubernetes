@@ -71,15 +71,6 @@ type SubTipoUnidadReserva struct {
 	Descripcion            string
 }
 
-type Reserva struct {
-	IDUReserva      int
-	IDPersona       int
-	IDUnidadReserva int
-	FechaInicio     time.Time
-	FechaFin        time.Time
-	Estado          string
-}
-
 type ReservaCancel struct {
 	IDReserva int
 	Status    string
@@ -106,9 +97,9 @@ type GetReservaPersona struct {
 }
 
 type GetReservaUnidadReserva struct {
-	IDUnidadReserva int
-	FechaDesde      time.Time
-	FechaHasta      time.Time
+	IDSubTipoUnidadReserva int
+	FechaDesde             time.Time
+	FechaHasta             time.Time
 }
 
 type PersonCreatedPayload struct {
@@ -157,4 +148,16 @@ type UpdSubTipoUnidadReserva struct {
 	IDSubTipoUnidadReserva int
 	Nombre                 string
 	Descripcion            string
+}
+
+type Reserva struct {
+	ID                     int
+	IDAgenda               int
+	Fecha                  time.Time
+	HoraInicio             string
+	HoraFin                string
+	IDPaciente             *int
+	Estado                 string
+	Observaciones          *string
+	IDSubTipoUnidadReserva int
 }

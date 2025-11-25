@@ -186,13 +186,17 @@ func (hs *AiReservesService) GetReservasPersonaAPI(ctx context.Context, req doma
 
 	return nil
 }
-func (hs *AiReservesService) GetReservasUnidadReservaAPI(ctx context.Context, req domain.GetReservaUnidadReserva) error {
+func (hs *AiReservesService) GetReservasUnidadReservaAPI(
+	ctx context.Context,
+	req domain.GetReservaUnidadReserva,
+) ([]domain.Reserva, error) {
 
-	if err := hs.hr.GetReservasUnidadReserva(ctx, req); err != nil {
-		return err
+	reservas, err := hs.hr.GetReservasUnidadReserva(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	return reservas, nil
 }
 
 /*

@@ -32,7 +32,7 @@ type AiReservesService interface {
 
 	GetInfoPersonaAPI(ctx context.Context, idPersona int) error
 	GetReservasPersonaAPI(ctx context.Context, req domain.GetReservaPersona) error
-	GetReservasUnidadReservaAPI(ctx context.Context, req domain.GetReservaUnidadReserva) error
+	GetReservasUnidadReservaAPI(ctx context.Context, req domain.GetReservaUnidadReserva) ([]domain.Reserva, error)
 }
 
 type AiReservesRepository interface {
@@ -60,7 +60,7 @@ type AiReservesRepository interface {
 
 	GetInfoPersona(ctx context.Context, idPersona int) error
 	GetReservasPersona(ctx context.Context, req domain.GetReservaPersona) error
-	GetReservasUnidadReserva(ctx context.Context, req domain.GetReservaUnidadReserva) error
+	GetReservasUnidadReserva(ctx context.Context, req domain.GetReservaUnidadReserva) ([]domain.Reserva, error)
 
 	PushEventToQueue(ctx context.Context, tx *sql.Tx, event domain.Event) error
 	WithTransaction(ctx context.Context, fn func(tx *sql.Tx) error) error

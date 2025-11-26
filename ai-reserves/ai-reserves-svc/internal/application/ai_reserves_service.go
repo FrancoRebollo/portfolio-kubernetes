@@ -170,26 +170,27 @@ func (hs *AiReservesService) InitAgendaAPI(ctx context.Context, req domain.Agend
 	return nil
 }
 
-func (hs *AiReservesService) GetInfoPersonaAPI(ctx context.Context, idPersona int) error {
+func (hs *AiReservesService) GetInfoPersonaAPI(ctx context.Context, idPersona int) (domain.Persona, error) {
 
-	if err := hs.hr.GetInfoPersona(ctx, idPersona); err != nil {
-		return err
+	persona, err := hs.hr.GetInfoPersona(ctx, idPersona)
+	if err != nil {
+		return domain.Persona{}, err
 	}
 
-	return nil
+	return persona, nil
 }
-func (hs *AiReservesService) GetReservasPersonaAPI(ctx context.Context, req domain.GetReservaPersona) error {
 
-	if err := hs.hr.GetReservasPersona(ctx, req); err != nil {
-		return err
+func (hs *AiReservesService) GetReservasPersonaAPI(ctx context.Context, req domain.GetReservaPersona) ([]domain.Reserva, error) {
+
+	reservas, err := hs.hr.GetReservasPersona(ctx, req)
+
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	return reservas, nil
 }
-func (hs *AiReservesService) GetReservasUnidadReservaAPI(
-	ctx context.Context,
-	req domain.GetReservaUnidadReserva,
-) ([]domain.Reserva, error) {
+func (hs *AiReservesService) GetReservasUnidadReservaAPI(ctx context.Context, req domain.GetReservaUnidadReserva) ([]domain.Reserva, error) {
 
 	reservas, err := hs.hr.GetReservasUnidadReserva(ctx, req)
 	if err != nil {

@@ -1003,18 +1003,118 @@ func (hr *AiReservesRepository) InitAgenda(ctx context.Context, req domain.Agend
 	return nil
 }
 
-func (hr *AiReservesRepository) GetInfoPersona(ctx context.Context, idPersona int) error {
-	return nil
+func (hr *AiReservesRepository) GetInfoPersona(ctx context.Context, idPersona int) (domain.Persona, error) {
+	var p domain.Persona
+
+	query := `
+		SELECT id, nombre, apellido_razon_social, persona_juridica,
+		       tipo_doc_persona, nro_doc_persona, email, telefono
+		FROM ai_res.personas
+		WHERE id = $1
+	`
+
+	row := hr.dbPost.GetDB().QueryRowContext(ctx, query, idPersona)
+
+	err := row.Scan(
+		&p.ID,
+		&p.Nombre,
+		&p.ApellidoRazonSocial,
+		&p.PersonaJuridia,
+		&p.TipoDocPersona,
+		&p.NroDocPersona,
+		&p.Email,
+		&p.TelPersona,
+	)
+
+	if err != nil {
+		return domain.Persona{}, err
+	}
+
+	return p, nil
 }
 
-func (hr *AiReservesRepository) GetReservasPersona(ctx context.Context, req domain.GetReservaPersona) error {
-	return nil
+func (hr *AiReservesRepository) GetReservasPersona(ctx context.Context, req domain.GetReservaPersona) ([]domain.Reserva, error) {
+	db := hr.dbPost.GetDB()
+
+	// 1️⃣ Validar que el sub_tipo exista (buenas prácticas)
+	var exists bool
+	err := db.QueryRowContext(ctx,
+		`SELECT EXISTS(
+			SELECT 1 
+			  FROM ai_res.personas
+			 WHERE id = $1
+		)`,
+		req.IDPersona,
+	).Scan(&exists)
+
+	if err != nil {
+		return nil, fmt.Errorf("validating person: %w", err)
+	}
+
+	if !exists {
+		return nil, fmt.Errorf("person doesn't exists")
+	}
+
+	// 2️⃣ Query principal
+	rows, err := db.QueryContext(ctx,
+		`SELECT 
+			id,
+			id_agenda,
+			fecha,
+			hora_inicio,
+			hora_fin,
+			id_paciente,
+			estado,
+			observaciones,
+			id_sub_tipo_unidad_reserva
+		 FROM ai_res.reservas
+		 WHERE id_paciente = $1
+		   AND estado IN ('PENDIENTE', 'CONFIRMADA')
+		   AND (fecha > CURRENT_DATE
+		        OR (fecha = CURRENT_DATE AND hora_fin > CURRENT_TIME))
+		 ORDER BY fecha, hora_inicio`,
+		req.IDPersona,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("query reservas: %w", err)
+	}
+	defer rows.Close()
+
+	// 3️⃣ Mapear filas
+	var reservas []domain.Reserva
+
+	for rows.Next() {
+		var r domain.Reserva
+
+		err := rows.Scan(
+			&r.ID,
+			&r.IDAgenda,
+			&r.Fecha,
+			&r.HoraInicio,
+			&r.HoraFin,
+			&r.IDPaciente,
+			&r.Estado,
+			&r.Observaciones,
+			&r.IDSubTipoUnidadReserva,
+		)
+
+		if err != nil {
+			return nil, fmt.Errorf("scan reservas: %w", err)
+		}
+
+		reservas = append(reservas, r)
+	}
+
+	// 4️⃣ Manejar error de iteración
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating reservas: %w", err)
+	}
+
+	return reservas, nil
 }
 
-func (hr *AiReservesRepository) GetReservasUnidadReserva(
-	ctx context.Context,
-	req domain.GetReservaUnidadReserva,
-) ([]domain.Reserva, error) {
+func (hr *AiReservesRepository) GetReservasUnidadReserva(ctx context.Context, req domain.GetReservaUnidadReserva) ([]domain.Reserva, error) {
 
 	db := hr.dbPost.GetDB()
 

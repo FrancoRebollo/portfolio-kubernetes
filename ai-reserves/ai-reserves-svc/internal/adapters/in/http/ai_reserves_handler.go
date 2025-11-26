@@ -301,11 +301,16 @@ func (h *AiReservesHandler) GetInfoPersona(c *gin.Context) {
 		return
 	}
 
-	if err := h.serv.GetInfoPersonaAPI(c, id); err != nil {
+	persona, err := h.serv.GetInfoPersonaAPI(c, id)
+	if err != nil {
 		newErrorResponse(c, err)
 		return
 	}
-	newSuccessResponse(c, "Información obtenida")
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    persona,
+	})
 }
 
 func (h *AiReservesHandler) GetReservasPersona(c *gin.Context) {
@@ -317,11 +322,14 @@ func (h *AiReservesHandler) GetReservasPersona(c *gin.Context) {
 
 	domainReq := domain.GetReservaPersona(req)
 
-	if err := h.serv.GetReservasPersonaAPI(c, domainReq); err != nil {
+	reservas, err := h.serv.GetReservasPersonaAPI(c, domainReq)
+
+	if err != nil {
 		newErrorResponse(c, err)
 		return
 	}
-	newSuccessResponse(c, "Reservas obtenidas")
+
+	c.JSON(200, reservas)
 }
 
 func (h *AiReservesHandler) GetReservasUnidadReserva(c *gin.Context) {

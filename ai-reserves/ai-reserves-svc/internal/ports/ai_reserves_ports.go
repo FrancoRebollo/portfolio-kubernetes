@@ -30,8 +30,8 @@ type AiReservesService interface {
 	SearchReserveAPI(ctx context.Context, req domain.SearchReserve) error
 	InitAgendaAPI(ctx context.Context, req domain.Agenda) error
 
-	GetInfoPersonaAPI(ctx context.Context, idPersona int) error
-	GetReservasPersonaAPI(ctx context.Context, req domain.GetReservaPersona) error
+	GetInfoPersonaAPI(ctx context.Context, idPersona int) (domain.Persona, error)
+	GetReservasPersonaAPI(ctx context.Context, req domain.GetReservaPersona) ([]domain.Reserva, error)
 	GetReservasUnidadReservaAPI(ctx context.Context, req domain.GetReservaUnidadReserva) ([]domain.Reserva, error)
 }
 
@@ -58,8 +58,8 @@ type AiReservesRepository interface {
 	SearchReserve(ctx context.Context, req domain.SearchReserve) error
 	InitAgenda(ctx context.Context, req domain.Agenda) error
 
-	GetInfoPersona(ctx context.Context, idPersona int) error
-	GetReservasPersona(ctx context.Context, req domain.GetReservaPersona) error
+	GetInfoPersona(ctx context.Context, idPersona int) (domain.Persona, error)
+	GetReservasPersona(ctx context.Context, req domain.GetReservaPersona) ([]domain.Reserva, error)
 	GetReservasUnidadReserva(ctx context.Context, req domain.GetReservaUnidadReserva) ([]domain.Reserva, error)
 
 	PushEventToQueue(ctx context.Context, tx *sql.Tx, event domain.Event) error

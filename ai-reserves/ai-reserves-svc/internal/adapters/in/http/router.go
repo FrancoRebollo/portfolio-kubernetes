@@ -90,8 +90,8 @@ func NewRouter(
 
 		ai_res.Group("/search-reserve").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.SearchReserve)
 		ai_res.Group("/init-agenda").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.InitAgenda)
+		//
 		ai_res.Group("/get-info-person").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.GetInfoPersona)
-
 		ai_res.Group("/get-reserves-person").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.GetReservasPersona)
 		ai_res.Group("/get-reserves-unidad-reserva").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.GetReservasUnidadReserva)
 

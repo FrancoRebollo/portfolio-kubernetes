@@ -11,7 +11,13 @@ type AiReservesService interface {
 	CreatePersonaAPI(ctx context.Context, req domain.PersonCreatedPayload) error
 	UpdAtributoPersonaAPI(ctx context.Context, req domain.PersonaParcial) error
 	UpdPersonaAPI(ctx context.Context, req domain.Persona) error
+
+	InsertFullConfigPersonaAPI(ctx context.Context, req domain.ConfigPersonaFull) error
 	UpsertConfigPersonaAPI(ctx context.Context, req domain.ConfigPersona) error
+	InsertConfigPersonalSubTipoAPI(ctx context.Context, config domain.ConfigPersonalSubTipo) error
+
+	InsertOrUpdateConfEstablecimientoAPI(ctx context.Context, req domain.ConfEstablecimiento) error
+	UpdateConfEstablecimientoFieldAPI(ctx context.Context, req domain.ConfigEstablecimiento) error
 
 	CreateUnidadReservaAPI(ctx context.Context, req *domain.UnidadReserva) error
 	CreateTipoUnidadReservaAPI(ctx context.Context, req domain.TipoUnidadReserva) error
@@ -39,7 +45,13 @@ type AiReservesRepository interface {
 	CreatePersona(ctx context.Context, req domain.PersonCreatedPayload) error
 	UpdAtributoPersona(ctx context.Context, req domain.PersonaParcial) error
 	UpdPersona(ctx context.Context, req domain.Persona) error
+
+	InsertFullConfigPersona(ctx context.Context, req domain.ConfigPersonaFull) error
 	UpsertConfigPersona(ctx context.Context, req domain.ConfigPersona) error
+	InsertConfigPersonalSubTipo(ctx context.Context, config domain.ConfigPersonalSubTipo) error
+
+	InsertOrUpdateConfEstablecimiento(ctx context.Context, req domain.ConfEstablecimiento) error
+	UpdateConfEstablecimientoField(ctx context.Context, req domain.ConfigEstablecimiento) error
 
 	CreateUnidadReserva(ctx context.Context, req *domain.UnidadReserva) (int, error)
 	CreateTipoUnidadReserva(ctx context.Context, req domain.TipoUnidadReserva) (int, error)

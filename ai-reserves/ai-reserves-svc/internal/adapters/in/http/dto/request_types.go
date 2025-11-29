@@ -182,3 +182,49 @@ type UpdSubTipoUnidadReserva struct {
 	Nombre                 string
 	Descripcion            string
 }
+
+type ConfigPersonaFull struct {
+	ID             int
+	IDPersona      int
+	HoraInicio     time.Time
+	HoraFin        time.Time
+	Lunes          bool
+	Martes         bool
+	Miercoles      bool
+	Jueves         bool
+	Viernes        bool
+	Sabado         bool
+	Domingo        bool
+	GeneraFeriados bool
+	ModoAgenda     string
+}
+
+type ConfigPersonalSubTipo struct {
+	IDConfPersonal         int
+	IDSubTipoUnidadReserva int
+	DuracionReservaMinutos int
+}
+
+type ConfEstablecimiento struct {
+	ID                     int
+	IDPersona              int
+	Nombre                 string
+	IDSubTipoUnidadReserva int
+	HoraInicio             time.Time
+	HoraFin                time.Time
+	Lunes                  bool
+	Martes                 bool
+	Miercoles              bool
+	Jueves                 bool
+	Viernes                bool
+	Sabado                 bool
+	Domingo                bool
+	GeneraFeriados         bool
+}
+
+type ConfigEstablecimiento struct {
+	IDPersona              int
+	IDSubTipoUnidadReserva int
+	Atribute               string
+	Value                  string
+}

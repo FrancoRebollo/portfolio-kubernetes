@@ -72,6 +72,12 @@ func NewRouter(
 		ai_res.Group("/upd-person").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.UpdPersona)
 
 		ai_res.Group("/upsert-config-person").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.UpsertConfigPersona)
+		ai_res.Group("/create-config-person").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.InsertFullConfigPersona)
+		ai_res.Group("/create-especialities-config-person").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.InsertConfigPersonalSubTipo)
+
+		ai_res.Group("/create-config-establishment").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.InsertOrUpdateConfEstablecimiento)
+		ai_res.Group("/update-establishment-field").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.UpdateConfEstablecimientoField)
+
 		ai_res.Group("/create-unidad-reserva").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.CreateUnidadReserva)
 		ai_res.Group("/create-tipo-unidad-reserva").POST("", middlewares.SecurityMiddleware(), middlewares.NewRateLimiterMiddleware(), AiReservesHandler.CreateTipoUnidadReserva)
 

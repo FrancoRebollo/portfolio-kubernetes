@@ -170,6 +170,16 @@ func (hs *AiReservesService) InitAgendaAPI(ctx context.Context, req domain.Agend
 	return nil
 }
 
+func (hs *AiReservesService) InsertFullConfigPersonaAPI(ctx context.Context, req domain.ConfigPersonaFull) error {
+
+	if err := hs.hr.InsertFullConfigPersona(ctx, req); err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
 func (hs *AiReservesService) GetInfoPersonaAPI(ctx context.Context, idPersona int) (domain.Persona, error) {
 
 	persona, err := hs.hr.GetInfoPersona(ctx, idPersona)
@@ -178,6 +188,15 @@ func (hs *AiReservesService) GetInfoPersonaAPI(ctx context.Context, idPersona in
 	}
 
 	return persona, nil
+}
+
+func (hs *AiReservesService) InsertConfigPersonalSubTipoAPI(ctx context.Context, req domain.ConfigPersonalSubTipo) error {
+
+	if err := hs.hr.InsertConfigPersonalSubTipo(ctx, req); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (hs *AiReservesService) GetReservasPersonaAPI(ctx context.Context, req domain.GetReservaPersona) ([]domain.Reserva, error) {
@@ -198,6 +217,24 @@ func (hs *AiReservesService) GetReservasUnidadReservaAPI(ctx context.Context, re
 	}
 
 	return reservas, nil
+}
+
+func (hs *AiReservesService) InsertOrUpdateConfEstablecimientoAPI(ctx context.Context, req domain.ConfEstablecimiento) error {
+
+	if err := hs.hr.InsertOrUpdateConfEstablecimiento(ctx, req); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (hs *AiReservesService) UpdateConfEstablecimientoFieldAPI(ctx context.Context, req domain.ConfigEstablecimiento) error {
+
+	if err := hs.hr.UpdateConfEstablecimientoField(ctx, req); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 /*

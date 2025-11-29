@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
+	"time"
 
 	"github.com/FrancoRebollo/ai-reserves-svc/internal/domain"
 	"github.com/FrancoRebollo/ai-reserves-svc/internal/platform/logger"
@@ -241,9 +241,9 @@ func (hr *AiReservesRepository) UpdPersona(ctx context.Context, req domain.Perso
 	return nil
 }
 
-func (hr *AiReservesRepository) UpsertConfigPersona(ctx context.Context, req domain.ConfigPersona) error {
+func (hr *AiReservesRepository) InsertFullConfigPersona(ctx context.Context, req domain.ConfigPersonaFull) error {
 
-	// --- 1) Validar que exista la persona ---
+	// 1) Validar que exista la persona
 	var personaExists bool
 	err := hr.dbPost.GetDB().QueryRowContext(ctx,
 		`SELECT EXISTS(SELECT 1 FROM ai_res.personas WHERE id = $1)`,
@@ -256,24 +256,100 @@ func (hr *AiReservesRepository) UpsertConfigPersona(ctx context.Context, req dom
 		return fmt.Errorf("persona id=%d does not exist", req.IDPersona)
 	}
 
-	// --- 2) Lista blanca completa de columnas actualizables ---
-	validCols := map[string]string{
-		"notificar_por_mail":     "boolean",
-		"notificar_por_sms":      "boolean",
-		"dias_visibles_adelante": "int",
-		"id_agenda":              "int",
+	// 2) Validar que NO exista aún config para esa persona
+	var exists bool
+	err = hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM ai_res.conf_personal WHERE id_persona = $1)`,
+		req.IDPersona,
+	).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("checking config existence: %w", err)
+	}
+	if exists {
+		return fmt.Errorf("config for persona id=%d already exists", req.IDPersona)
 	}
 
-	// Determinar si la columna es válida
+	// 3) INSERT completo
+	query := `
+		INSERT INTO ai_res.conf_personal
+			(id_persona, hora_inicio, hora_fin,
+			 lunes, martes, miercoles, jueves, viernes, sabado, domingo,
+			 genera_feriados, modo_agenda,
+			 created_by)
+		VALUES
+			($1, $2, $3,
+			 $4, $5, $6, $7, $8, $9, $10,
+			 $11, $12,
+			 'ai_reserves')
+		RETURNING id;
+	`
+
+	var newID int
+
+	err = hr.dbPost.GetDB().QueryRowContext(ctx, query,
+		req.IDPersona,
+		req.HoraInicio,
+		req.HoraFin,
+		req.Lunes,
+		req.Martes,
+		req.Miercoles,
+		req.Jueves,
+		req.Viernes,
+		req.Sabado,
+		req.Domingo,
+		req.GeneraFeriados,
+		req.ModoAgenda,
+	).Scan(&newID)
+
+	if err != nil {
+		return fmt.Errorf("insert full config: %w", err)
+	}
+
+	fmt.Printf("🆕 Config personal insertada para persona %d (id=%d)\n", req.IDPersona, newID)
+
+	return nil
+}
+
+func (hr *AiReservesRepository) UpsertConfigPersona(ctx context.Context, req domain.ConfigPersona) error {
+
+	// 1) Validar que exista la persona
+	var personaExists bool
+	err := hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM ai_res.personas WHERE id = $1)`,
+		req.IDPersona,
+	).Scan(&personaExists)
+	if err != nil {
+		return fmt.Errorf("checking persona existence: %w", err)
+	}
+	if !personaExists {
+		return fmt.Errorf("persona id=%d does not exist", req.IDPersona)
+	}
+
+	// 2) Whitelist actualizada
+	validCols := map[string]string{
+		"hora_inicio":     "time",
+		"hora_fin":        "time",
+		"lunes":           "boolean",
+		"martes":          "boolean",
+		"miercoles":       "boolean",
+		"jueves":          "boolean",
+		"viernes":         "boolean",
+		"sabado":          "boolean",
+		"domingo":         "boolean",
+		"genera_feriados": "boolean",
+	}
+
+	// Validar columna
 	colType, ok := validCols[req.Atribute]
 	if !ok {
 		return fmt.Errorf("attribute '%s' cannot be updated", req.Atribute)
 	}
 
-	// --- 3) Convertir valor según tipo ---
+	// 3) Convertir el valor según tipo
 	var castValue interface{}
 
 	switch colType {
+
 	case "boolean":
 		if req.Value == "true" || req.Value == "1" {
 			castValue = true
@@ -283,35 +359,39 @@ func (hr *AiReservesRepository) UpsertConfigPersona(ctx context.Context, req dom
 			return fmt.Errorf("invalid boolean value '%s'", req.Value)
 		}
 
-	case "int":
-		n, errConv := strconv.Atoi(req.Value)
+	case "time":
+		t, errConv := time.Parse("15:04", req.Value)
 		if errConv != nil {
-			return fmt.Errorf("invalid integer value '%s'", req.Value)
+			// probar con segundos
+			t, errConv = time.Parse("15:04:05", req.Value)
+			if errConv != nil {
+				return fmt.Errorf("invalid time value '%s', expected HH:mm or HH:mm:ss", req.Value)
+			}
 		}
-		castValue = n
+		castValue = t
 
 	default:
 		return fmt.Errorf("unsupported type '%s' for column '%s'", colType, req.Atribute)
 	}
 
-	// --- 4) Ver si existe config para persona ---
+	// 4) Ver si existe config para persona
 	var exists bool
 	err = hr.dbPost.GetDB().QueryRowContext(ctx,
-		`SELECT EXISTS(SELECT 1 FROM ai_res.conf_agenda_persona WHERE id_persona = $1)`,
+		`SELECT EXISTS(SELECT 1 FROM ai_res.conf_personal WHERE id_persona = $1)`,
 		req.IDPersona,
 	).Scan(&exists)
 	if err != nil {
 		return fmt.Errorf("checking config existence: %w", err)
 	}
 
-	// --- 5) INSERT si no existe ---
+	// 5) INSERT si no existe
 	if !exists {
 
 		queryInsert := fmt.Sprintf(`
-            INSERT INTO ai_res.conf_agenda_persona
-                (id_persona, %s, created_by)
-            VALUES ($1, $2, 'auth_security')
-        `, req.Atribute)
+			INSERT INTO ai_res.conf_personal
+				(id_persona, %s, created_by)
+			VALUES ($1, $2, 'auth_security')
+		`, req.Atribute)
 
 		_, err = hr.dbPost.GetDB().ExecContext(ctx, queryInsert, req.IDPersona, castValue)
 		if err != nil {
@@ -323,14 +403,14 @@ func (hr *AiReservesRepository) UpsertConfigPersona(ctx context.Context, req dom
 		return nil
 	}
 
-	// --- 6) UPDATE dinámico (solo con columnas seguras) ---
+	// 6) UPDATE dinámico
 	queryUpdate := fmt.Sprintf(`
-        UPDATE ai_res.conf_agenda_persona
-           SET %s = $1,
-               updated_at = CURRENT_TIMESTAMP,
-               updated_by = 'auth_security'
-         WHERE id_persona = $2
-    `, req.Atribute)
+		UPDATE ai_res.conf_personal
+		   SET %s = $1,
+			   updated_at = CURRENT_TIMESTAMP,
+			   updated_by = 'auth_security'
+		 WHERE id_persona = $2
+	`, req.Atribute)
 
 	_, err = hr.dbPost.GetDB().ExecContext(ctx, queryUpdate, castValue, req.IDPersona)
 	if err != nil {
@@ -1249,4 +1329,257 @@ func (hr *AiReservesRepository) WithTransaction(ctx context.Context, fn func(tx 
 	}
 
 	return tx.Commit()
+}
+
+func (hr *AiReservesRepository) InsertConfigPersonalSubTipo(ctx context.Context, config domain.ConfigPersonalSubTipo) error {
+	// The SQL insert statement
+	query := `
+		INSERT INTO ai_res.conf_personal_sub_tipo_unidad_reserva
+			(id_conf_personal, id_sub_tipo_unidad_reserva, duracion_reserva_minutos)
+		VALUES ($1, $2, $3)
+	`
+
+	// Execute the query with the provided parameters
+	_, err := hr.dbPost.GetDB().ExecContext(ctx, query,
+		config.IDConfPersonal,
+		config.IDSubTipoUnidadReserva,
+		config.DuracionReservaMinutos,
+	)
+	if err != nil {
+		return fmt.Errorf("inserting config personal sub tipo: %w", err)
+	}
+
+	return nil
+}
+
+func (hr *AiReservesRepository) InsertOrUpdateConfEstablecimiento(ctx context.Context, req domain.ConfEstablecimiento) error {
+
+	// 1) Validar existencia de persona
+	var personaExists bool
+	err := hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM ai_res.personas WHERE id = $1)`,
+		req.IDPersona,
+	).Scan(&personaExists)
+	if err != nil {
+		return fmt.Errorf("checking persona existence: %w", err)
+	}
+	if !personaExists {
+		return fmt.Errorf("persona id=%d does not exist", req.IDPersona)
+	}
+
+	// 2) Validar existence of sub_tipo_unidad_reserva
+	var subTipoExists bool
+	err = hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM ai_res.sub_tipo_unidad_reserva WHERE id = $1)`,
+		req.IDSubTipoUnidadReserva,
+	).Scan(&subTipoExists)
+	if err != nil {
+		return fmt.Errorf("checking sub_tipo_unidad_reserva: %w", err)
+	}
+	if !subTipoExists {
+		return fmt.Errorf("sub_tipo_unidad_reserva id=%d does not exist", req.IDSubTipoUnidadReserva)
+	}
+
+	// 3) Ver si ya existe el registro para (id_persona + id_sub_tipo)
+	var exists bool
+	err = hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT EXISTS(
+			SELECT 1 
+			  FROM ai_res.conf_establecimiento
+			 WHERE id_persona = $1
+			   AND id_sub_tipo_unidad_reserva = $2
+		)`,
+		req.IDPersona, req.IDSubTipoUnidadReserva,
+	).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("checking existing conf_establecimiento: %w", err)
+	}
+
+	// 4) UPDATE COMPLETO si ya existe
+	if exists {
+		queryUpdate := `
+			UPDATE ai_res.conf_establecimiento
+			   SET nombre = $1,
+				   hora_inicio = $2,
+				   hora_fin = $3,
+				   lunes = $4,
+				   martes = $5,
+				   miercoles = $6,
+				   jueves = $7,
+				   viernes = $8,
+				   sabado = $9,
+				   domingo = $10,
+				   genera_feriados = $11,
+				   updated_at = CURRENT_TIMESTAMP,
+				   updated_by = 'auth_security'
+			 WHERE id_persona = $12
+			   AND id_sub_tipo_unidad_reserva = $13
+		`
+
+		_, err = hr.dbPost.GetDB().ExecContext(ctx, queryUpdate,
+			req.Nombre,
+			req.HoraInicio,
+			req.HoraFin,
+			req.Lunes,
+			req.Martes,
+			req.Miercoles,
+			req.Jueves,
+			req.Viernes,
+			req.Sabado,
+			req.Domingo,
+			req.GeneraFeriados,
+			req.IDPersona,
+			req.IDSubTipoUnidadReserva,
+		)
+
+		if err != nil {
+			return fmt.Errorf("updating conf_establecimiento: %w", err)
+		}
+
+		fmt.Printf("🔄 Updated conf_establecimiento for persona=%d + sub_tipo=%d\n",
+			req.IDPersona, req.IDSubTipoUnidadReserva)
+
+		return nil
+	}
+
+	// 5) INSERT COMPLETO si NO existe
+	queryInsert := `
+		INSERT INTO ai_res.conf_establecimiento
+			(id_persona, nombre, id_sub_tipo_unidad_reserva,
+			 hora_inicio, hora_fin,
+			 lunes, martes, miercoles, jueves, viernes, sabado, domingo,
+			 genera_feriados, created_by)
+		VALUES
+			($1, $2, $3,
+			 $4, $5,
+			 $6, $7, $8, $9, $10, $11, $12,
+			 $13, 'auth_security')
+		RETURNING id;
+	`
+
+	var newID int
+	err = hr.dbPost.GetDB().QueryRowContext(ctx, queryInsert,
+		req.IDPersona,
+		req.Nombre,
+		req.IDSubTipoUnidadReserva,
+		req.HoraInicio,
+		req.HoraFin,
+		req.Lunes,
+		req.Martes,
+		req.Miercoles,
+		req.Jueves,
+		req.Viernes,
+		req.Sabado,
+		req.Domingo,
+		req.GeneraFeriados,
+	).Scan(&newID)
+
+	if err != nil {
+		return fmt.Errorf("insert conf_establecimiento: %w", err)
+	}
+
+	fmt.Printf("🆕 Created conf_establecimiento id=%d for persona=%d + sub_tipo=%d\n",
+		newID, req.IDPersona, req.IDSubTipoUnidadReserva)
+
+	return nil
+}
+
+func (hr *AiReservesRepository) UpdateConfEstablecimientoField(ctx context.Context, req domain.ConfigEstablecimiento) error {
+
+	// 1) Whitelist de columnas permitidas
+	validCols := map[string]string{
+		"nombre":          "string",
+		"hora_inicio":     "time",
+		"hora_fin":        "time",
+		"lunes":           "boolean",
+		"martes":          "boolean",
+		"miercoles":       "boolean",
+		"jueves":          "boolean",
+		"viernes":         "boolean",
+		"sabado":          "boolean",
+		"domingo":         "boolean",
+		"genera_feriados": "boolean",
+	}
+
+	colType, ok := validCols[req.Atribute]
+	if !ok {
+		return fmt.Errorf("attribute '%s' cannot be updated", req.Atribute)
+	}
+
+	// 2) Validar existencia del registro
+	var exists bool
+	err := hr.dbPost.GetDB().QueryRowContext(ctx,
+		`SELECT EXISTS(
+			SELECT 1 FROM ai_res.conf_establecimiento
+			 WHERE id_persona = $1
+			   AND id_sub_tipo_unidad_reserva = $2
+		)`,
+		req.IDPersona,
+		req.IDSubTipoUnidadReserva,
+	).Scan(&exists)
+
+	if err != nil {
+		return fmt.Errorf("checking conf_establecimiento existence: %w", err)
+	}
+
+	if !exists {
+		return fmt.Errorf("no conf_establecimiento found for persona=%d + sub_tipo=%d",
+			req.IDPersona, req.IDSubTipoUnidadReserva)
+	}
+
+	// 3) Convertir valor según tipo
+	var castValue interface{}
+
+	switch colType {
+
+	case "boolean":
+		if req.Value == "true" || req.Value == "1" {
+			castValue = true
+		} else if req.Value == "false" || req.Value == "0" {
+			castValue = false
+		} else {
+			return fmt.Errorf("invalid boolean value '%s'", req.Value)
+		}
+
+	case "time":
+		t, errConv := time.Parse("15:04", req.Value)
+		if errConv != nil {
+			t, errConv = time.Parse("15:04:05", req.Value)
+			if errConv != nil {
+				return fmt.Errorf("invalid time '%s', expected HH:mm or HH:mm:ss", req.Value)
+			}
+		}
+		castValue = t
+
+	case "string":
+		castValue = req.Value
+
+	default:
+		return fmt.Errorf("unsupported type '%s' for field '%s'", colType, req.Atribute)
+	}
+
+	// 4) UPDATE dinámico seguro
+	queryUpdate := fmt.Sprintf(`
+		UPDATE ai_res.conf_establecimiento
+		   SET %s = $1,
+		       updated_at = CURRENT_TIMESTAMP,
+		       updated_by = 'auth_security'
+		 WHERE id_persona = $2
+		   AND id_sub_tipo_unidad_reserva = $3
+	`, req.Atribute)
+
+	_, err = hr.dbPost.GetDB().ExecContext(ctx, queryUpdate,
+		castValue,
+		req.IDPersona,
+		req.IDSubTipoUnidadReserva,
+	)
+
+	if err != nil {
+		return fmt.Errorf("update conf_establecimiento: %w", err)
+	}
+
+	fmt.Printf("🔄 Updated conf_establecimiento field %s for persona=%d + sub_tipo=%d\n",
+		req.Atribute, req.IDPersona, req.IDSubTipoUnidadReserva)
+
+	return nil
 }

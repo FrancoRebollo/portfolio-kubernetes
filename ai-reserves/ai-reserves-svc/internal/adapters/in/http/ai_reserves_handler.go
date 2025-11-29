@@ -65,6 +65,66 @@ func (h *AiReservesHandler) UpdAtributoPersona(c *gin.Context) {
 	newSuccessResponse(c, "Atributo de persona actualizado")
 }
 
+func (h *AiReservesHandler) InsertFullConfigPersona(c *gin.Context) {
+	var req dto.ConfigPersonaFull
+	if err := c.BindJSON(&req); err != nil {
+		newErrorResponse(c, err)
+		return
+	}
+	domainReq := domain.ConfigPersonaFull(req)
+
+	if err := h.serv.InsertFullConfigPersonaAPI(c, domainReq); err != nil {
+		newErrorResponse(c, err)
+		return
+	}
+	newSuccessResponse(c, "Configuration created succesfully")
+}
+
+func (h *AiReservesHandler) InsertConfigPersonalSubTipo(c *gin.Context) {
+	var req dto.ConfigPersonalSubTipo
+	if err := c.BindJSON(&req); err != nil {
+		newErrorResponse(c, err)
+		return
+	}
+	domainReq := domain.ConfigPersonalSubTipo(req)
+
+	if err := h.serv.InsertConfigPersonalSubTipoAPI(c, domainReq); err != nil {
+		newErrorResponse(c, err)
+		return
+	}
+	newSuccessResponse(c, "Especialities saved")
+}
+
+func (h *AiReservesHandler) InsertOrUpdateConfEstablecimiento(c *gin.Context) {
+	var req dto.ConfEstablecimiento
+	if err := c.BindJSON(&req); err != nil {
+		newErrorResponse(c, err)
+		return
+	}
+	domainReq := domain.ConfEstablecimiento(req)
+
+	if err := h.serv.InsertOrUpdateConfEstablecimientoAPI(c, domainReq); err != nil {
+		newErrorResponse(c, err)
+		return
+	}
+	newSuccessResponse(c, "Configurations saved")
+}
+
+func (h *AiReservesHandler) UpdateConfEstablecimientoField(c *gin.Context) {
+	var req dto.ConfigEstablecimiento
+	if err := c.BindJSON(&req); err != nil {
+		newErrorResponse(c, err)
+		return
+	}
+	domainReq := domain.ConfigEstablecimiento(req)
+
+	if err := h.serv.UpdateConfEstablecimientoFieldAPI(c, domainReq); err != nil {
+		newErrorResponse(c, err)
+		return
+	}
+	newSuccessResponse(c, "Configurations saved")
+}
+
 func (h *AiReservesHandler) UpdPersona(c *gin.Context) {
 	var req dto.Persona
 	if err := c.BindJSON(&req); err != nil {
